@@ -1,5 +1,5 @@
 import { parseFiltersFromParams } from "@/lib/products/filters";
-import { fetchProducts } from "@/lib/products/api";
+import { fetchProducts } from "@/lib/products/fetch-products";
 import { ProductCatalog } from "@/components/product";
 import type { Metadata } from "next";
 
