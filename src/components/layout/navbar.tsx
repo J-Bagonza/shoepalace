@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, useScroll } from "framer-motion";
 import { useCartItemCount } from "@/store/cart";
 import { useCartControls } from "@/store/ui";
 import { createClient } from "@/lib/supabase/client";
