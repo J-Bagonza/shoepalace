@@ -1,36 +1,45 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# Dependencies
+node_modules/
+.pnp
 .pnp.js
-.yarn/install-state.gz
 
-# testing
-/coverage
+# Next.js
+.next/
+out/
+build/
 
-# next.js
-/.next/
-/out/
+# Env files — never commit secrets
+.env
+.env.local
+.env.production
+.env.staging
 
-# production
-/build
+# Keep example safe
+!.env.example
 
-# misc
+# Logs
+*.log
+pino-logs/
+
+# Testing
+coverage/
+.vitest-cache/
+
+# OS
 .DS_Store
-*.pem
+Thumbs.db
+desktop.ini
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Sentry
+.sentryclirc
 
-# local env files
-.env*.local
+# Supabase local
+supabase/.temp/
+supabase/seed.sql
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# IDE
+.vscode/
+.idea/
+*.swp
+# Sentry Config File
+.env.sentry-build-plugin

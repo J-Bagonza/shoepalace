@@ -1,0 +1,1 @@
+export { ModelViewerWrapper } from "./model-viewer-wrapper";

@@ -1,0 +1,31 @@
+import { redirect } from "next/navigation";
+import { getAuthenticatedUser } from "@/lib/auth/session";
+
+export default async function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const user = await getAuthenticatedUser();
+
+  // SECURITY: server-side role check — middleware is defense in depth only
+  if (!user || user.role !== "admin") {
+    redirect("/login");
+  }
+
+  return (
+    <div className="min-h-screen bg-neutral-50">
+      <header className="bg-white border-b border-neutral-200 px-6 py-4">
+        <div className="mx-auto max-w-7xl flex items-center justify-between">
+          <span className="font-bebas text-xl tracking-wider text-neutral-900">
+            ShoePalace Admin
+          </span>
+          <span className="text-xs text-neutral-400 uppercase tracking-widest">
+            {user.email}
+          </span>
+        </div>
+      </header>
+      <div className="mx-auto max-w-7xl px-6 py-8">{children}</div>
+    </div>
+  );
+}
