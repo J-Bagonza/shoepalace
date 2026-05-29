@@ -1,0 +1,50 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  deploy:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel (Staging)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+          alias-domains: staging.shoepalace.vercel.app
+
+      - name: Run smoke tests against staging
+        run: |
+          STAGING_URL="https://staging.shoepalace.vercel.app"
+          
+          echo "Checking health endpoint..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/api/health")
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed with status $STATUS"
+            exit 1
+          fi
+
+          echo "Checking homepage..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL")
+          if [ "$STATUS" != "200" ]; then
+            echo "Homepage check failed with status $STATUS"
+            exit 1
+          fi
+
+          echo "Checking products page..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$STAGING_URL/products")
+          if [ "$STATUS" != "200" ]; then
+            echo "Products page check failed with status $STATUS"
+            exit 1
+          fi
+
+          echo "All smoke tests passed."

@@ -1,0 +1,52 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel (Production)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: "--prod"
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+
+      - name: Production smoke tests
+        run: |
+          PROD_URL="https://shoepalace.vercel.app"
+          
+          echo "Running production smoke tests..."
+
+          for ENDPOINT in "/" "/products" "/api/health"; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL$ENDPOINT")
+            if [ "$STATUS" != "200" ]; then
+              echo "FAILED: $ENDPOINT returned $STATUS"
+              exit 1
+            fi
+            echo "OK: $ENDPOINT"
+          done
+
+          echo "All production smoke tests passed."
+
+      - name: Notify Sentry of deployment
+        run: |
+          curl -s https://sentry.io/api/0/organizations/${{ secrets.SENTRY_ORG }}/releases/ \
+            -X POST \
+            -H "Authorization: Bearer ${{ secrets.SENTRY_AUTH_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"version\": \"${{ github.sha }}\",
+              \"projects\": [\"${{ secrets.SENTRY_PROJECT }}\"],
+              \"ref\": \"${{ github.sha }}\"
+            }"
