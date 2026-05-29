@@ -53,9 +53,7 @@ const nextConfig = {
       },
     ];
   },
-  experimental: {
-    typedRoutes: true,
-  },
+  experimental: {},
   logging: {
     fetches: { fullUrl: false },
   },
