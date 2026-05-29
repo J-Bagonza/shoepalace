@@ -57,12 +57,12 @@ async function listHandler(req: Request) {
   const total = count ?? 0;
 
   const result: PaginatedResponse<Product> = {
-    data: (data ?? []) as Product[],
-    total,
-    page,
-    page_size,
-    total_pages: Math.ceil(total / page_size),
-  };
+  data: (data ?? []) as unknown as Product[],
+  total,
+  page,
+  page_size,
+  total_pages: Math.ceil(total / page_size),
+};
 
   return Response.json(
     { data: result, error: null, status: 200 },
