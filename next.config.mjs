@@ -53,7 +53,9 @@ const nextConfig = {
       },
     ];
   },
-  experimental: {},
+  experimental: {
+    outputFileTracingRoot: new URL(".", import.meta.url).pathname,
+  },
   logging: {
     fetches: { fullUrl: false },
   },
