@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { useCartItemCount } from "@/store/cart";
 import { useCartControls } from "@/store/ui";
 import { createClient } from "@/lib/supabase/client";
@@ -22,12 +22,12 @@ export function Navbar() {
   const itemCount = useCartItemCount();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const { scrollY } = useScroll();
 
-  // Navbar background opacity on scroll
   useEffect(() => {
     const unsubscribe = scrollY.on("change", (y) => {
       setScrolled(y > 20);
@@ -35,18 +35,36 @@ export function Navbar() {
     return unsubscribe;
   }, [scrollY]);
 
+  async function fetchUserRole(userId: string) {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .single<{ role: string }>();
+    setIsAdmin(data?.role === "admin");
+  }
+
   // Auth state
   useEffect(() => {
     const supabase = createClient();
 
     supabase.auth.getUser().then(({ data }) => {
-      setIsAuthenticated(!!data.user);
+      const user = data.user;
+      setIsAuthenticated(!!user);
+      if (user) void fetchUserRole(user.id);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session?.user);
+      const user = session?.user ?? null;
+      setIsAuthenticated(!!user);
+      if (user) {
+        void fetchUserRole(user.id);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -111,16 +129,30 @@ export function Navbar() {
 
           {/* Right actions */}
           <div className="flex items-center gap-5">
-            {/* Auth */}
             <div className="hidden md:flex items-center gap-4">
               {isAuthenticated ? (
-                <button
-                  onClick={handleSignOut}
-                  className="text-xs uppercase tracking-widest text-neutral-400
-                    hover:text-neutral-900 transition-colors duration-200"
-                >
-                  Sign Out
-                </button>
+                <>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className={clsx(
+                        "text-xs uppercase tracking-widest transition-colors duration-200 px-3 py-1.5 border",
+                        pathname.startsWith("/admin")
+                          ? "border-neutral-900 text-neutral-900"
+                          : "border-neutral-300 text-neutral-500 hover:border-neutral-900 hover:text-neutral-900",
+                      )}
+                    >
+                      Admin
+                    </Link>
+                  )}
+                  <button
+                    onClick={handleSignOut}
+                    className="text-xs uppercase tracking-widest text-neutral-400
+                      hover:text-neutral-900 transition-colors duration-200"
+                  >
+                    Sign Out
+                  </button>
+                </>
               ) : (
                 <Link
                   href="/login"
@@ -203,6 +235,19 @@ export function Navbar() {
               </Link>
             </li>
           ))}
+
+          {isAdmin && (
+            <li>
+              <Link
+                href="/admin"
+                className="text-sm uppercase tracking-widest text-neutral-700
+                  hover:text-[#E8001D] transition-colors"
+              >
+                Admin Dashboard
+              </Link>
+            </li>
+          )}
+
           <li className="pt-2 border-t border-neutral-100">
             {isAuthenticated ? (
               <button
