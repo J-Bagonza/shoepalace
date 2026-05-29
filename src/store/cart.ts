@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { useShallow } from "zustand/react/shallow";
 import type { CartItem, Cart } from "@/types/cart";
 
 interface CartActions {
@@ -114,7 +115,6 @@ export const useCartStore = create<CartState>()(
     {
       name: "shoepalace-cart",
       storage: createJSONStorage(() => localStorage),
-      // Only persist items — recompute derived state on rehydration
       partialize: (state) => ({ items: state.items }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
@@ -126,7 +126,9 @@ export const useCartStore = create<CartState>()(
 );
 
 // Stable selectors — prevents unnecessary re-renders
-export const useCartItems = () => useCartStore((s) => s.items);
+export const useCartItems = () => useCartStore(useShallow((s) => s.items));
 export const useCartTotal = () => useCartStore((s) => s.total);
 export const useCartItemCount = () => useCartStore((s) => s.item_count);
-export const useCartActions = () => useCartStore((s) => s.actions);
+
+// Actions read imperatively — no subscription, no re-render cycle
+export const useCartActions = () => useCartStore.getState().actions;

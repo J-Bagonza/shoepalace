@@ -15,9 +15,10 @@ export const useUIStore = create<UIState>()((set) => ({
 }));
 
 export const useCartOpen = () => useUIStore((s) => s.cartOpen);
-export const useCartControls = () =>
-  useUIStore((s) => ({
-    openCart: s.openCart,
-    closeCart: s.closeCart,
-    toggleCart: s.toggleCart,
-  }));
+
+// Actions read imperatively — no subscription, no re-render cycle
+export const useCartControls = () => ({
+  openCart: useUIStore.getState().openCart,
+  closeCart: useUIStore.getState().closeCart,
+  toggleCart: useUIStore.getState().toggleCart,
+});
