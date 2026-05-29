@@ -5,7 +5,9 @@ export async function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID();
 
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request: {
+      headers: request.headers,
+    },
   });
 
   response.headers.set("x-request-id", requestId);
@@ -18,44 +20,48 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
+
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
           response = NextResponse.next({
-            request: { headers: request.headers },
+            request: {
+              headers: request.headers,
+            },
           });
+
           response.headers.set("x-request-id", requestId);
-          cookiesToSet.forEach(({ name, value, options }) =>
+
+          cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, {
               ...options,
               httpOnly: true,
               secure: process.env.NODE_ENV === "production",
               sameSite: "lax",
-            }),
-          );
+            });
+          });
         },
       },
     },
   );
 
-  // Refresh session
-  await supabase.auth.getUser();
-
-  const { pathname } = request.nextUrl;
-
-  const isAdminRoute = pathname.startsWith("/admin");
-  const isAuthRoute =
-    pathname.startsWith("/login") || pathname.startsWith("/signup");
-
+  // Get authenticated user once
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const { pathname } = request.nextUrl;
+
+  const isAdminRoute = pathname.startsWith("/admin");
+
+  const isAuthRoute =
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup");
+
+  // Redirect unauthenticated users away from admin routes
   if (isAdminRoute && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Redirect authenticated users away from auth pages
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL("/", request.url));
   }
@@ -64,5 +70,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|public/).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
+  ],
 };
