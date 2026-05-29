@@ -2,13 +2,18 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback } from "react";
-import { buildSearchParams } from "@/lib/products/filters";
+import { buildSearchParams, parseFiltersFromParams } from "@/lib/products/filters";
 import type { ActiveFilters, SortOption } from "@/lib/products/filters";
 
-export function useFilters(current: ActiveFilters) {
+export function useFilters(_initial: ActiveFilters) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  // Derive current filters from the URL — stable reference via searchParams
+  const current = parseFiltersFromParams(
+    Object.fromEntries(searchParams.entries())
+  );
 
   const push = useCallback(
     (updates: Partial<ActiveFilters>) => {
@@ -16,7 +21,8 @@ export function useFilters(current: ActiveFilters) {
       const qs = buildSearchParams(next);
       router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [current, pathname, router],
+    // searchParams (not current) is the stable dependency here
+    [searchParams, pathname, router],
   );
 
   const setCategory = useCallback(
@@ -45,7 +51,7 @@ export function useFilters(current: ActiveFilters) {
       const qs = buildSearchParams(next);
       router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: true });
     },
-    [current, pathname, router],
+    [searchParams, pathname, router],
   );
 
   const clearFilters = useCallback(() => {
