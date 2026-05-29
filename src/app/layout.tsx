@@ -25,16 +25,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
   ),
+  other: {
+    ...Sentry.getTraceData(),
+  },
 };
-
-// ✅ Sentry tracing metadata injection
-export function generateMetadata(): Metadata {
-  return {
-    other: {
-      ...Sentry.getTraceData(),
-    },
-  };
-}
 
 export default function RootLayout({
   children,
