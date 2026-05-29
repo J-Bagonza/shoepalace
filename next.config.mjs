@@ -67,7 +67,7 @@ const nextConfig = {
               "img-src 'self' data: blob: https://*.supabase.co",
 
               // API / Auth / Sentry
-              "connect-src 'self' https://*.supabase.co https://*.ingest.de.sentry.io https://raw.githack.com blob:",
+              "connect-src 'self' https://*.supabase.co https://*.ingest.de.sentry.io https://raw.githack.com https://raw.githubusercontent.com blob:",
 
               "worker-src 'self' blob:",
 
