@@ -1,10 +1,12 @@
 {
   "extends": [
     "next/core-web-vitals",
+    "plugin:@typescript-eslint/recommended",
     "prettier"
   ],
   "rules": {
     "no-console": "warn",
-    "react/self-closing-comp": "warn"
+    "react/self-closing-comp": "warn",
+    "@typescript-eslint/no-explicit-any": "off"
   }
 }
