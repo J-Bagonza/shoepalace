@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { clsx } from "clsx";
+import { createClient } from "@/lib/supabase/client";
 
 interface ModelUploadProps {
   productId: string;
@@ -25,7 +26,6 @@ export function ModelUpload({
   async function handleFile(file: File) {
     setError(null);
 
-    // Client-side pre-check
     if (!file.name.endsWith(".glb") && !file.name.endsWith(".gltf")) {
       setError("Only .glb or .gltf files are allowed.");
       return;
@@ -37,50 +37,53 @@ export function ModelUpload({
     }
 
     setUploading(true);
-    setProgress(0);
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("productId", productId);
-    formData.append("type", "model");
+    setProgress(10);
 
     try {
-      // Use XMLHttpRequest for upload progress
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.addEventListener("progress", (e) => {
-          if (e.lengthComputable) {
-            setProgress(Math.round((e.loaded / e.total) * 100));
-          }
-        });
-
-        xhr.addEventListener("load", () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              const json = JSON.parse(xhr.responseText) as {
-                data: { url: string } | null;
-                error: string | null;
-              };
-              if (json.data?.url) {
-                setUrl(json.data.url);
-                onChange?.(json.data.url);
-                resolve();
-              } else {
-                reject(new Error(json.error ?? "Upload failed."));
-              }
-            } catch {
-              reject(new Error("Invalid response."));
-            }
-          } else {
-            reject(new Error("Upload failed."));
-          }
-        });
-
-        xhr.addEventListener("error", () => reject(new Error("Network error.")));
-        xhr.open("POST", "/api/admin/uploads");
-        xhr.send(formData);
+      // Step 1: Get a signed upload URL from our API
+      const res = await fetch("/api/admin/uploads/signed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId,
+          type: "model",
+          filename: file.name,
+        }),
       });
+
+      if (!res.ok) {
+        const json = (await res.json()) as { error?: string };
+        throw new Error(json.error ?? "Failed to get upload URL.");
+      }
+
+      const json = (await res.json()) as {
+        data: {
+          signedUrl: string;
+          token: string;
+          path: string;
+          publicUrl: string;
+        };
+      };
+
+      const { signedUrl, token, path, publicUrl } = json.data;
+
+      setProgress(30);
+
+      // Step 2: Upload directly to Supabase Storage (bypasses Vercel size limit)
+      const supabase = createClient();
+      const { error: uploadError } = await supabase.storage
+        .from("product-models")
+        .uploadToSignedUrl(path, token, file, {
+          contentType: file.type || "model/gltf-binary",
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      setProgress(100);
+      setUrl(publicUrl);
+      onChange?.(publicUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
     } finally {
@@ -108,24 +111,20 @@ export function ModelUpload({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex items-center justify-between border
-            border-neutral-200 px-4 py-3"
+          className="flex items-center justify-between border border-neutral-200 px-4 py-3"
         >
           <div className="flex flex-col gap-0.5 min-w-0">
-            <span className="text-xs uppercase tracking-widest
-              text-neutral-500">
+            <span className="text-xs uppercase tracking-widest text-neutral-500">
               Model Uploaded
             </span>
-            <span className="text-[10px] text-neutral-400 truncate
-              max-w-xs">
+            <span className="text-[10px] text-neutral-400 truncate max-w-xs">
               {url}
             </span>
           </div>
           <button
             type="button"
             onClick={handleRemove}
-            className="text-[10px] uppercase tracking-widest text-neutral-400
-              hover:text-[#E8001D] transition-colors ml-4 shrink-0"
+            className="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-[#E8001D] transition-colors ml-4 shrink-0"
           >
             Remove
           </button>
@@ -174,8 +173,7 @@ export function ModelUpload({
               <p className="text-xs uppercase tracking-widest text-neutral-500">
                 Drop .glb file here or click to browse
               </p>
-              <p className="text-[10px] text-neutral-300 uppercase
-                tracking-widest">
+              <p className="text-[10px] text-neutral-300 uppercase tracking-widest">
                 GLB or GLTF — Max 50MB
               </p>
             </div>
