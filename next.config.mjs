@@ -71,7 +71,7 @@ const nextConfig = {
               "img-src 'self' data: blob: https://*.supabase.co",
 
               // API / Auth / Sentry
-              "connect-src 'self' https://*.supabase.co https://*.ingest.sentry.io",
+              "connect-src 'self' https://*.supabase.co https://o4511471414607872.ingest.de.sentry.io",
 
               // Security hardening
               "frame-ancestors 'none'",
