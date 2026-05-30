@@ -6,10 +6,8 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: process.env.NEXT_PUBLIC_SUPABASE_URL
-          ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
-          : "",
-        pathname: "/storage/v1/object/public/**",
+        hostname: "hisgmvazdmtgjuepuqit.supabase.co",
+        pathname: "/**",
       },
     ],
     formats: ["image/avif", "image/webp"],
@@ -28,50 +26,32 @@ const nextConfig = {
             key: "X-Frame-Options",
             value: "DENY",
           },
-
           {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },
-
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
-
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
-
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains; preload",
           },
-
           {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-
-              // Next.js + React hydration
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.sentry-cdn.com",
-
-              // Tailwind / Google Fonts
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-
-              // Fonts
               "font-src 'self' https://fonts.gstatic.com data:",
-
-              // Images
               "img-src 'self' data: blob: https://*.supabase.co",
-
-              // API / Auth / Sentry
               "connect-src 'self' https://*.supabase.co https://*.ingest.de.sentry.io https://raw.githack.com https://raw.githubusercontent.com blob:",
-
               "worker-src 'self' blob:",
-
-              // Security hardening
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
@@ -96,14 +76,10 @@ const nextConfig = {
 export default withSentryConfig(nextConfig, {
   org: "shoepalace",
   project: "shoepalace",
-
   silent: !process.env.CI,
-
   widenClientFileUpload: true,
-
   webpack: {
     automaticVercelMonitors: false,
-
     treeshake: {
       removeDebugLogging: true,
     },
