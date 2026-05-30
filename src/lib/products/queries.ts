@@ -4,9 +4,6 @@ import type { ProductListQuery } from "@/lib/validations/product";
 
 type Client = SupabaseClient<Database>;
 
-/**
- * Applies sort order to a products query.
- */
 export function applySortOrder(
   query: ReturnType<Client["from"]>,
   sort: ProductListQuery["sort"],
@@ -26,9 +23,6 @@ export function applySortOrder(
   }
 }
 
-/**
- * Base product select with joined images and variants.
- */
 export const PRODUCT_SELECT = `
   id,
   name,
@@ -38,6 +32,7 @@ export const PRODUCT_SELECT = `
   category,
   is_featured,
   model_url,
+  deleted_at,
   created_at,
   updated_at,
   product_images (
