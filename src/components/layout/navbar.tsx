@@ -16,61 +16,67 @@ const NAV_LINKS = [
   { href: "/products?category=hiking", label: "Hiking" },
 ] as const;
 
+type AuthState = "loading" | "unauthenticated" | "customer" | "admin";
+
 export function Navbar() {
   const pathname = usePathname();
   const { openCart } = useCartControls();
   const itemCount = useCartItemCount();
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [authState, setAuthState] = useState<AuthState>("loading");
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const { scrollY } = useScroll();
 
   useEffect(() => {
-    const unsubscribe = scrollY.on("change", (y) => {
-      setScrolled(y > 20);
-    });
+    const unsubscribe = scrollY.on("change", (y) => setScrolled(y > 20));
     return unsubscribe;
   }, [scrollY]);
 
-  async function fetchUserRole(userId: string) {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", userId)
-      .single<{ role: string }>();
-    setIsAdmin(data?.role === "admin");
+  async function resolveRole(userId: string) {
+    try {
+      // Read role directly from Supabase — no API call needed
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .single<{ role: string }>();
+
+      setAuthState(data?.role === "admin" ? "admin" : "customer");
+    } catch {
+      setAuthState("customer");
+    }
   }
 
-  // Auth state
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }) => {
-      const user = data.user;
-      setIsAuthenticated(!!user);
-      if (user) void fetchUserRole(user.id);
+    // Check current session immediately
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setAuthState("unauthenticated");
+      } else {
+        void resolveRole(user.id);
+      }
     });
 
+    // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      const user = session?.user ?? null;
-      setIsAuthenticated(!!user);
-      if (user) {
-        void fetchUserRole(user.id);
+      if (!session?.user) {
+        setAuthState("unauthenticated");
       } else {
-        setIsAdmin(false);
+        void resolveRole(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Close menu on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
@@ -78,8 +84,12 @@ export function Navbar() {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
+    setAuthState("unauthenticated");
     window.location.href = "/";
   }
+
+  const isAuthenticated = authState === "customer" || authState === "admin";
+  const isAdmin = authState === "admin";
 
   return (
     <>
@@ -95,20 +105,16 @@ export function Navbar() {
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
         <nav
-          className="mx-auto flex h-[72px] max-w-7xl items-center
-            justify-between px-6 lg:px-8"
+          className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-6 lg:px-8"
           aria-label="Main navigation"
         >
-          {/* Logo */}
           <Link
             href="/"
-            className="font-bebas text-2xl tracking-wider text-neutral-900
-              hover:text-[#E8001D] transition-colors duration-200"
+            className="font-bebas text-2xl tracking-wider text-neutral-900 hover:text-[#E8001D] transition-colors duration-200"
           >
             ShoePalace
           </Link>
 
-          {/* Desktop nav links */}
           <ul className="hidden md:flex items-center gap-8" role="list">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
@@ -127,10 +133,11 @@ export function Navbar() {
             ))}
           </ul>
 
-          {/* Right actions */}
           <div className="flex items-center gap-5">
             <div className="hidden md:flex items-center gap-4">
-              {isAuthenticated ? (
+              {authState === "loading" ? (
+                <div className="w-16 h-4 bg-neutral-100 animate-pulse rounded" />
+              ) : isAuthenticated ? (
                 <>
                   {isAdmin && (
                     <Link
@@ -145,10 +152,33 @@ export function Navbar() {
                       Admin
                     </Link>
                   )}
+
+                  {!isAdmin && (
+                    <Link
+                      href="/profile"
+                      aria-label="Your profile"
+                      className="text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </Link>
+                  )}
+
                   <button
                     onClick={handleSignOut}
-                    className="text-xs uppercase tracking-widest text-neutral-400
-                      hover:text-neutral-900 transition-colors duration-200"
+                    className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
                   >
                     Sign Out
                   </button>
@@ -156,20 +186,16 @@ export function Navbar() {
               ) : (
                 <Link
                   href="/login"
-                  className="text-xs uppercase tracking-widest text-neutral-400
-                    hover:text-neutral-900 transition-colors duration-200"
+                  className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
                 >
                   Sign In
                 </Link>
               )}
             </div>
 
-            {/* Cart button */}
             <button
               onClick={openCart}
-              className="relative flex items-center gap-2 text-xs uppercase
-                tracking-widest text-neutral-900 hover:text-[#E8001D]
-                transition-colors duration-200"
+              className="relative flex items-center gap-2 text-xs uppercase tracking-widest text-neutral-900 hover:text-[#E8001D] transition-colors duration-200"
               aria-label={`Open cart${itemCount > 0 ? `, ${itemCount} items` : ""}`}
             >
               <span>Cart</span>
@@ -178,15 +204,13 @@ export function Navbar() {
                   key={itemCount}
                   initial={{ scale: 0.6, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="flex h-4 w-4 items-center justify-center
-                    bg-[#E8001D] text-white text-[10px]"
+                  className="flex h-4 w-4 items-center justify-center bg-[#E8001D] text-white text-[10px]"
                 >
                   {itemCount > 99 ? "99" : itemCount}
                 </motion.span>
               )}
             </button>
 
-            {/* Mobile menu button */}
             <button
               onClick={() => setMenuOpen((prev) => !prev)}
               className="flex md:hidden flex-col gap-1.5 p-1"
@@ -212,7 +236,6 @@ export function Navbar() {
         </nav>
       </motion.header>
 
-      {/* Mobile menu */}
       <motion.div
         initial={false}
         animate={menuOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
@@ -228,8 +251,7 @@ export function Navbar() {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm uppercase tracking-widest text-neutral-700
-                  hover:text-[#E8001D] transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors"
               >
                 {link.label}
               </Link>
@@ -240,10 +262,20 @@ export function Navbar() {
             <li>
               <Link
                 href="/admin"
-                className="text-sm uppercase tracking-widest text-neutral-700
-                  hover:text-[#E8001D] transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors"
               >
                 Admin Dashboard
+              </Link>
+            </li>
+          )}
+
+          {isAuthenticated && !isAdmin && (
+            <li>
+              <Link
+                href="/profile"
+                className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors"
+              >
+                My Profile
               </Link>
             </li>
           )}
@@ -252,16 +284,14 @@ export function Navbar() {
             {isAuthenticated ? (
               <button
                 onClick={handleSignOut}
-                className="text-sm uppercase tracking-widest text-neutral-400
-                  hover:text-neutral-900 transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
               >
                 Sign Out
               </button>
             ) : (
               <Link
                 href="/login"
-                className="text-sm uppercase tracking-widest text-neutral-400
-                  hover:text-neutral-900 transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
               >
                 Sign In
               </Link>
