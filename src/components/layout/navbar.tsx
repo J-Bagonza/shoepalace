@@ -18,6 +18,25 @@ const NAV_LINKS = [
 
 type AuthState = "loading" | "unauthenticated" | "customer" | "admin";
 
+function PersonIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const { openCart } = useCartControls();
@@ -58,7 +77,6 @@ export function Navbar() {
   useEffect(() => {
     const supabase = createClient();
 
-    // Initial check
     void resolveRole();
 
     const {
@@ -72,7 +90,7 @@ export function Navbar() {
     });
 
     return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -103,16 +121,20 @@ export function Navbar() {
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
         <nav
-          className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-6 lg:px-8"
+          className="mx-auto flex h-[72px] max-w-7xl items-center
+            justify-between px-6 lg:px-8"
           aria-label="Main navigation"
         >
+          {/* Logo */}
           <Link
             href="/"
-            className="font-bebas text-2xl tracking-wider text-neutral-900 hover:text-[#E8001D] transition-colors duration-200"
+            className="font-bebas text-2xl tracking-wider text-neutral-900
+              hover:text-[#E8001D] transition-colors duration-200"
           >
             ShoePalace
           </Link>
 
+          {/* Desktop nav links */}
           <ul className="hidden md:flex items-center gap-8" role="list">
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
@@ -131,67 +153,53 @@ export function Navbar() {
             ))}
           </ul>
 
+          {/* Right actions */}
           <div className="flex items-center gap-5">
+            {/* Desktop auth */}
             <div className="hidden md:flex items-center gap-4">
-              {authState === "loading" ? (
-                <div className="w-16 h-4 bg-neutral-100 animate-pulse rounded" />
-              ) : {isAuthenticated ? (
+              {authState === "loading" && (
+                <div className="h-4 w-4 rounded-full bg-neutral-100
+                  animate-pulse" />
+              )}
+
+              {authState !== "loading" && isAuthenticated && (
                 <>
                   <Link
                     href={isAdmin ? "/admin" : "/profile"}
                     aria-label={isAdmin ? "Admin dashboard" : "Your profile"}
-                    className="text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
+                    className="text-neutral-400 hover:text-neutral-900
+                      transition-colors duration-200"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
+                    <PersonIcon />
                   </Link>
-
                   <button
                     onClick={handleSignOut}
-                    className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
+                    className="text-xs uppercase tracking-widest text-neutral-400
+                      hover:text-neutral-900 transition-colors duration-200"
                   >
                     Sign Out
                   </button>
                 </>
-              ) : (
+              )}
+
+              {authState !== "loading" && !isAuthenticated && (
                 <Link
                   href="/login"
-                  className="text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
                   aria-label="Sign in"
+                  className="text-neutral-400 hover:text-neutral-900
+                    transition-colors duration-200"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
+                  <PersonIcon />
                 </Link>
               )}
             </div>
 
+            {/* Cart */}
             <button
               onClick={openCart}
-              className="relative flex items-center gap-2 text-xs uppercase tracking-widest text-neutral-900 hover:text-[#E8001D] transition-colors duration-200"
+              className="relative flex items-center gap-2 text-xs uppercase
+                tracking-widest text-neutral-900 hover:text-[#E8001D]
+                transition-colors duration-200"
               aria-label={`Open cart${itemCount > 0 ? `, ${itemCount} items` : ""}`}
             >
               <span>Cart</span>
@@ -200,13 +208,15 @@ export function Navbar() {
                   key={itemCount}
                   initial={{ scale: 0.6, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="flex h-4 w-4 items-center justify-center bg-[#E8001D] text-white text-[10px]"
+                  className="flex h-4 w-4 items-center justify-center
+                    bg-[#E8001D] text-white text-[10px]"
                 >
                   {itemCount > 99 ? "99" : itemCount}
                 </motion.span>
               )}
             </button>
 
+            {/* Mobile menu button */}
             <button
               onClick={() => setMenuOpen((prev) => !prev)}
               className="flex md:hidden flex-col gap-1.5 p-1"
@@ -214,7 +224,9 @@ export function Navbar() {
               aria-expanded={menuOpen}
             >
               <motion.span
-                animate={menuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
+                animate={
+                  menuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }
+                }
                 className="block h-px w-5 bg-neutral-900 origin-center"
               />
               <motion.span
@@ -232,6 +244,7 @@ export function Navbar() {
         </nav>
       </motion.header>
 
+      {/* Mobile menu */}
       <motion.div
         initial={false}
         animate={menuOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
@@ -247,7 +260,8 @@ export function Navbar() {
             <li key={link.href}>
               <Link
                 href={link.href}
-                className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-700
+                  hover:text-[#E8001D] transition-colors"
               >
                 {link.label}
               </Link>
@@ -258,7 +272,8 @@ export function Navbar() {
             <li>
               <Link
                 href="/admin"
-                className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-700
+                  hover:text-[#E8001D] transition-colors"
               >
                 Admin Dashboard
               </Link>
@@ -269,7 +284,8 @@ export function Navbar() {
             <li>
               <Link
                 href="/profile"
-                className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-700
+                  hover:text-[#E8001D] transition-colors"
               >
                 My Profile
               </Link>
@@ -280,14 +296,16 @@ export function Navbar() {
             {isAuthenticated ? (
               <button
                 onClick={handleSignOut}
-                className="text-sm uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-400
+                  hover:text-neutral-900 transition-colors"
               >
                 Sign Out
               </button>
             ) : (
               <Link
                 href="/login"
-                className="text-sm uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
+                className="text-sm uppercase tracking-widest text-neutral-400
+                  hover:text-neutral-900 transition-colors"
               >
                 Sign In
               </Link>
