@@ -43,3 +43,6 @@ supabase/seed.sql
 *.swp
 # Sentry Config File
 .env.sentry-build-plugin
+
+# supabase 
+supabase/migrations/

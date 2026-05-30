@@ -77,7 +77,11 @@ export async function fetchProducts(
 
   const total = count ?? 0;
   const result: PaginatedResponse<Product> = {
-    data: (data ?? []) as unknown as Product[],
+    data: (data ?? []).map((p) => ({
+      ...p,
+      images: p.product_images ?? [],
+      variants: p.product_variants ?? [],
+    })) as unknown as Product[],
     total,
     page: filters.page,
     page_size: filters.page_size,
