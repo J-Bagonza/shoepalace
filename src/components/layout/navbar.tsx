@@ -34,17 +34,22 @@ export function Navbar() {
     return unsubscribe;
   }, [scrollY]);
 
-  async function resolveRole(userId: string) {
+  async function resolveRole() {
     try {
-      // Read role directly from Supabase — no API call needed
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("users")
-        .select("role")
-        .eq("id", userId)
-        .single<{ role: string }>();
-
-      setAuthState(data?.role === "admin" ? "admin" : "customer");
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (!res.ok) {
+        setAuthState("unauthenticated");
+        return;
+      }
+      const json = await res.json() as {
+        data: { role: string } | null;
+        error: string | null;
+      };
+      if (!json.data) {
+        setAuthState("unauthenticated");
+        return;
+      }
+      setAuthState(json.data.role === "admin" ? "admin" : "customer");
     } catch {
       setAuthState("customer");
     }
@@ -53,23 +58,16 @@ export function Navbar() {
   useEffect(() => {
     const supabase = createClient();
 
-    // Check current session immediately
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        setAuthState("unauthenticated");
-      } else {
-        void resolveRole(user.id);
-      }
-    });
+    // Initial check
+    void resolveRole();
 
-    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
         setAuthState("unauthenticated");
-      } else {
-        void resolveRole(session.user.id);
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        void resolveRole();
       }
     });
 
@@ -137,44 +135,28 @@ export function Navbar() {
             <div className="hidden md:flex items-center gap-4">
               {authState === "loading" ? (
                 <div className="w-16 h-4 bg-neutral-100 animate-pulse rounded" />
-              ) : isAuthenticated ? (
+              ) : {isAuthenticated ? (
                 <>
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      className={clsx(
-                        "text-xs uppercase tracking-widest transition-colors duration-200 px-3 py-1.5 border",
-                        pathname.startsWith("/admin")
-                          ? "border-neutral-900 text-neutral-900"
-                          : "border-neutral-300 text-neutral-500 hover:border-neutral-900 hover:text-neutral-900",
-                      )}
+                  <Link
+                    href={isAdmin ? "/admin" : "/profile"}
+                    aria-label={isAdmin ? "Admin dashboard" : "Your profile"}
+                    className="text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      Admin
-                    </Link>
-                  )}
-
-                  {!isAdmin && (
-                    <Link
-                      href="/profile"
-                      aria-label="Your profile"
-                      className="text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                        <circle cx="12" cy="7" r="4" />
-                      </svg>
-                    </Link>
-                  )}
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </Link>
 
                   <button
                     onClick={handleSignOut}
@@ -186,9 +168,23 @@ export function Navbar() {
               ) : (
                 <Link
                   href="/login"
-                  className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
+                  className="text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
+                  aria-label="Sign in"
                 >
-                  Sign In
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
                 </Link>
               )}
             </div>
