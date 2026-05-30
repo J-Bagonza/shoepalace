@@ -219,10 +219,19 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
         if (error) throw new Error(error.message);
 
+        // Save image record to product_images table
+        const position = images.length;
+        const saveRes = await fetch("/api/admin/uploads/image-record", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId, url: publicUrl, alt: "", position }),
+        });
+        if (!saveRes.ok) throw new Error("Failed to save image record.");
+
         const newImage: UploadedImage = {
           url: publicUrl,
           alt: "",
-          position: images.length,
+          position,
         };
         setImages((prev) => [...prev, newImage]);
       }
