@@ -192,13 +192,21 @@ export function AdminProductTable({
                         {!showDeleted ? (
                           <>
                             <Link
-                              href={`/admin/products/${product.id}/edit`}
-                              className="text-[10px] uppercase tracking-widest
-                                text-neutral-500 hover:text-neutral-900
-                                transition-colors"
-                            >
-                              Edit
-                            </Link>
+  href={`/admin/products/${product.id}/edit`}
+  className="text-[10px] uppercase tracking-widest
+    text-neutral-500 hover:text-neutral-900
+    transition-colors"
+>
+  Edit
+</Link>
+<Link
+  href={`/admin/products/${product.id}/stock`}
+  className="text-[10px] uppercase tracking-widest
+    text-neutral-500 hover:text-neutral-900
+    transition-colors"
+>
+  Stock
+</Link>
                             <button
                               onClick={() => handleDelete(product.id)}
                               disabled={actionLoading === product.id}
