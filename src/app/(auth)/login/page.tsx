@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Metadata } from "next";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { signinSchema } from "@/lib/validations/auth";
@@ -27,12 +26,15 @@ export default function LoginPage() {
 
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
+
       result.error.issues.forEach((issue) => {
         const key = issue.path[0];
+
         if (typeof key === "string") {
           fieldErrors[key] = issue.message;
         }
       });
+
       setErrors(fieldErrors);
       return;
     }
@@ -42,11 +44,15 @@ export default function LoginPage() {
     try {
       const res = await fetch("/api/auth/signin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(result.data),
       });
 
-      const json = (await res.json()) as ApiResponse<{ message: string }>;
+      const json = (await res.json()) as ApiResponse<{
+        message: string;
+      }>;
 
       if (!res.ok || json.error) {
         setServerError(json.error ?? "Something went wrong.");
@@ -68,12 +74,17 @@ export default function LoginPage() {
         <h1 className="font-bebas text-4xl tracking-wide text-neutral-900">
           Sign In
         </h1>
+
         <p className="text-sm text-neutral-500">
           Welcome back to ShoePalace.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+      <form
+        onSubmit={handleSubmit}
+        noValidate
+        className="flex flex-col gap-5"
+      >
         {serverError && (
           <div
             role="alert"
@@ -109,11 +120,22 @@ export default function LoginPage() {
 
         <Link
           href="/forgot-password"
-          className="text-center text-xs uppercase tracking-widest
-            text-neutral-400 hover:text-neutral-900 transition-colors"
+          className="text-center text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
         >
           Forgot password?
         </Link>
+
+        <div className="flex flex-col gap-3 pt-2 border-t border-neutral-100">
+          <p className="text-center text-xs text-neutral-400">
+            Want to sell on ShoePalace?{" "}
+            <Link
+              href="/register-store"
+              className="text-neutral-700 hover:text-neutral-900 transition-colors underline underline-offset-2"
+            >
+              Apply to open a store
+            </Link>
+          </p>
+        </div>
       </form>
 
       <p className="text-center text-sm text-neutral-500">

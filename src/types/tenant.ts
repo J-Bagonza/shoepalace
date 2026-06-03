@@ -22,6 +22,22 @@ export interface TenantSettings {
   updated_at: string;
 }
 
+export interface TenantRequest {
+  id: string;
+  store_name: string;
+  slug: string;
+  owner_email: string;
+  owner_name: string;
+  phone: string | null;
+  description: string | null;
+  status: "pending" | "approved" | "rejected";
+  rejection_note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TenantContext {
   tenant: Tenant;
   tenantId: string;

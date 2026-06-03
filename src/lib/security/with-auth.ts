@@ -43,8 +43,15 @@ export async function requireAuth(
 
   const role = profile.role;
 
-  if (requiredRole && role !== requiredRole) {
-    return forbiddenResponse();
+  if (requiredRole) {
+    // platform_admin can access everything admin can
+    const allowed =
+      role === requiredRole ||
+      (requiredRole === "admin" && role === "platform_admin");
+
+    if (!allowed) {
+      return forbiddenResponse();
+    }
   }
 
   return { userId: user.id, role, tenantId };

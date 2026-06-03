@@ -57,6 +57,7 @@ export function Navbar() {
   const itemCount = useCartItemCount();
 
   const [authState, setAuthState] = useState<AuthState>("loading");
+  const [rawRole, setRawRole] = useState<string>("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -82,7 +83,15 @@ export function Navbar() {
         setAuthState("unauthenticated");
         return;
       }
-      setAuthState(json.data.role === "admin" ? "admin" : "customer");
+      setRawRole(json.data.role);
+      if (
+        json.data.role === "platform_admin" ||
+        json.data.role === "admin"
+      ) {
+        setAuthState("admin");
+      } else {
+        setAuthState("customer");
+      }
     } catch {
       setAuthState("customer");
     }
@@ -173,7 +182,13 @@ export function Navbar() {
               {authState !== "loading" && isAuthenticated && (
                 <>
                   <Link
-                    href={isAdmin ? "/admin" : "/profile"}
+                    href={
+                      rawRole === "platform_admin"
+                        ? "/platform"
+                        : isAdmin
+                          ? "/admin"
+                          : "/orders"
+                    }
                     aria-label={isAdmin ? "Admin dashboard" : "Your profile"}
                     className="text-neutral-400 hover:text-neutral-900
                       transition-colors duration-200"
@@ -276,7 +291,19 @@ export function Navbar() {
             </li>
           ))}
 
-          {isAdmin && (
+          {rawRole === "platform_admin" && (
+            <li>
+              <Link
+                href="/platform"
+                className="text-sm uppercase tracking-widest text-neutral-700
+                  hover:text-[#E8001D] transition-colors"
+              >
+                Platform
+              </Link>
+            </li>
+          )}
+
+          {isAdmin && rawRole !== "platform_admin" && (
             <li>
               <Link
                 href="/admin"
