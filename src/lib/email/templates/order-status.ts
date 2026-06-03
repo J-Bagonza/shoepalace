@@ -9,7 +9,7 @@ interface OrderStatusData {
   note?: string;
 }
 
-const STATUS_MESSAGES: Record
+const STATUS_MESSAGES: Record<
   string,
   { heading: string; body: string; badgeClass: string }
 > = {
