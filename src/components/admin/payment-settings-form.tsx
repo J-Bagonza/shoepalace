@@ -127,7 +127,7 @@ export function PaymentSettingsForm() {
             {
               step: "2",
               title: "Get your API Key",
-              body: 'In your PayHero dashboard, go to Settings then API. Copy the API Key shown there. It looks like "username:password".',
+              body: 'In your PayHero dashboard, go to Settings then API. Copy the API Key shown there. It looks like &quot;username:password&quot;.',
             },
             {
               step: "3",
