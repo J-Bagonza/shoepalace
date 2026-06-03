@@ -30,5 +30,5 @@ export async function fetchAllPages(tenantId: string): Promise<CmsPage[]> {
     .order("slug");
 
   if (error || !data) return [];
-  return data as CmsPage[];
+  return data as unknown as CmsPage[];
 }
