@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { ProductListQuery } from "@/lib/validations/product";
-
-type Client = SupabaseClient<Database>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyPostgrestBuilder = any;
 
 export function applySortOrder(
-  query: ReturnType<Client["from"]>,
+  query: AnyPostgrestBuilder,
   sort: ProductListQuery["sort"],
 ) {
   switch (sort) {
