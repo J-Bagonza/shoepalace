@@ -127,7 +127,7 @@ export function PaymentSettingsForm() {
             {
               step: "2",
               title: "Get your API Key",
-              body: 'In your PayHero dashboard, go to Settings then API. Copy the API Key shown there. It looks like &quot;username:password&quot;.',
+              body: "In your PayHero dashboard, go to Settings then API. Copy the API Key shown there. It looks like username:password.",
             },
             {
               step: "3",
@@ -218,7 +218,7 @@ export function PaymentSettingsForm() {
       {!isActive && (
         <p className="text-[10px] text-neutral-400 leading-relaxed">
           Your store is running on cash on delivery. Customers will see a
-          "Pay on Delivery" option at checkout. No M-Pesa setup is needed
+          Pay on Delivery option at checkout. No M-Pesa setup is needed
           for this to work.
         </p>
       )}
