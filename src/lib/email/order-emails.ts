@@ -4,6 +4,13 @@ import { orderStatusTemplate } from "./templates/order-status";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Order, OrderItem } from "@/types/order";
 
+function logError(message: string, ...args: unknown[]): void {
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.error(message, ...args);
+  }
+}
+
 export async function sendOrderConfirmationEmail(
   orderId: string,
   tenantId: string,
@@ -12,7 +19,6 @@ export async function sendOrderConfirmationEmail(
     const admin = createAdminSupabaseClient();
     await admin.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
-    // Fetch order with items
     const { data: order } = await admin
       .from("orders")
       .select("*")
@@ -44,14 +50,10 @@ export async function sendOrderConfirmationEmail(
     });
 
     if (!result.success) {
-      console.error(
-        "[email] Order confirmation failed:",
-        result.error,
-        { orderId },
-      );
+      logError("[email] Order confirmation failed:", result.error, { orderId });
     }
   } catch (err) {
-    console.error("[email] sendOrderConfirmationEmail exception:", err);
+    logError("[email] sendOrderConfirmationEmail exception:", err);
   }
 }
 
@@ -73,7 +75,6 @@ export async function sendOrderStatusEmail(
 
     if (!order) return;
 
-    // Only send emails for meaningful status changes
     const EMAIL_STATUSES = [
       "confirmed",
       "processing",
@@ -102,13 +103,9 @@ export async function sendOrderStatusEmail(
     });
 
     if (!result.success) {
-      console.error(
-        "[email] Status email failed:",
-        result.error,
-        { orderId, status: order.status },
-      );
+      logError("[email] Status email failed:", result.error, { orderId, status: order.status });
     }
   } catch (err) {
-    console.error("[email] sendOrderStatusEmail exception:", err);
+    logError("[email] sendOrderStatusEmail exception:", err);
   }
 }

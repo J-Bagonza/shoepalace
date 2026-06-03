@@ -15,6 +15,13 @@ export interface EmailResult {
   error?: string;
 }
 
+function logError(message: string, ...args: unknown[]): void {
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.error(message, ...args);
+  }
+}
+
 export async function sendEmail(options: SendEmailOptions): Promise<EmailResult> {
   try {
     const resend = getResendClient();
@@ -29,14 +36,14 @@ export async function sendEmail(options: SendEmailOptions): Promise<EmailResult>
     });
 
     if (error) {
-      console.error("[email] Send failed:", error);
+      logError("[email] Send failed:", error);
       return { success: false, error: error.message };
     }
 
     return { success: true, id: data?.id };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    console.error("[email] Send exception:", message);
+    logError("[email] Send exception:", message);
     return { success: false, error: message };
   }
 }

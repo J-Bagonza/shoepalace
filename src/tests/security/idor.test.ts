@@ -34,8 +34,6 @@ vi.mock("@/lib/logger/audit-logger", () => ({
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
-type _MockClient = ReturnType<typeof createServerSupabaseClient>;
-type _MockAdminClient = ReturnType<typeof createAdminSupabaseClient>;
 
 const VICTIM_USER_ID  = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
 const ATTACKER_USER_ID = "bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb";
