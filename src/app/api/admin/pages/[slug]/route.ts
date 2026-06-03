@@ -18,7 +18,7 @@ const pageSlugSchema = z.object({
 const updatePageSchema = z.object({
   title: z.string().min(1).max(255).trim(),
   content: z
-    .array(z.record(z.unknown()))
+    .array(z.record(z.string(), z.unknown()))
     .min(1)
     .max(100),
 });
