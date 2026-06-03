@@ -44,6 +44,7 @@ async function handler(req: Request): Promise<Response> {
     url,
     alt,
     position,
+    tenant_id: auth.tenantId,
   });
 
   if (error) {
