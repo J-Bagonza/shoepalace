@@ -12,6 +12,32 @@ interface AdminProductTableProps {
   showDeleted: boolean;
 }
 
+function getStockStatus(variants: { stock: number }[]): {
+  label: string;
+  className: string;
+} | null {
+  if (!variants || variants.length === 0) return null;
+  const total = variants.reduce((sum, v) => sum + v.stock, 0);
+  const hasZero = variants.some((v) => v.stock === 0);
+
+  if (total === 0) {
+    return {
+      label: "Out of stock",
+      className: "text-red-500",
+    };
+  }
+  if (hasZero || total <= 5) {
+    return {
+      label: `Low stock (${total})`,
+      className: "text-yellow-600",
+    };
+  }
+  return {
+    label: `In stock (${total})`,
+    className: "text-green-600",
+  };
+}
+
 export function AdminProductTable({
   products,
   showDeleted,
@@ -164,15 +190,24 @@ export function AdminProductTable({
 
                     {/* Stock */}
                     <td className="px-4 py-3">
-                      <span className={`text-xs ${
-                        totalStock > 10
-                          ? "text-green-600"
-                          : totalStock > 0
-                            ? "text-yellow-600"
-                            : "text-red-500"
-                      }`}>
-                        {totalStock}
-                      </span>
+                      {(() => {
+                        const status = getStockStatus(product.variants ?? []);
+                        return status ? (
+                          <span className={`text-[10px] uppercase tracking-widest ${status.className}`}>
+                            {status.label}
+                          </span>
+                        ) : (
+                          <span className={`text-xs ${
+                            totalStock > 10
+                              ? "text-green-600"
+                              : totalStock > 0
+                                ? "text-yellow-600"
+                                : "text-red-500"
+                          }`}>
+                            {totalStock}
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     {/* Featured */}
@@ -192,21 +227,21 @@ export function AdminProductTable({
                         {!showDeleted ? (
                           <>
                             <Link
-  href={`/admin/products/${product.id}/edit`}
-  className="text-[10px] uppercase tracking-widest
-    text-neutral-500 hover:text-neutral-900
-    transition-colors"
->
-  Edit
-</Link>
-<Link
-  href={`/admin/products/${product.id}/stock`}
-  className="text-[10px] uppercase tracking-widest
-    text-neutral-500 hover:text-neutral-900
-    transition-colors"
->
-  Stock
-</Link>
+                              href={`/admin/products/${product.id}/edit`}
+                              className="text-[10px] uppercase tracking-widest
+                                text-neutral-500 hover:text-neutral-900
+                                transition-colors"
+                            >
+                              Edit
+                            </Link>
+                            <Link
+                              href={`/admin/products/${product.id}/stock`}
+                              className="text-[10px] uppercase tracking-widest
+                                text-neutral-500 hover:text-neutral-900
+                                transition-colors"
+                            >
+                              Stock
+                            </Link>
                             <button
                               onClick={() => handleDelete(product.id)}
                               disabled={actionLoading === product.id}

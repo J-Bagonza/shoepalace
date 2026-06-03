@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useTenant } from "@/lib/tenant/context";
 
 const FOOTER_LINKS = {
   shop: [
@@ -21,6 +24,7 @@ const FOOTER_LINKS = {
 } as const;
 
 export function Footer() {
+  const tenant = useTenant();
   const year = new Date().getFullYear();
 
   return (
@@ -50,7 +54,7 @@ export function Footer() {
               className="font-bebas text-2xl tracking-wider text-white
                 hover:text-[#E8001D] transition-colors"
             >
-              ShoePalace
+              {tenant.name}
             </Link>
             <p className="text-xs text-white/40 leading-relaxed max-w-[200px]">
               Precision-crafted footwear for those who move with purpose.
@@ -124,7 +128,7 @@ export function Footer() {
             sm:flex-row items-start sm:items-center justify-between gap-4"
         >
           <p className="text-xs text-white/30">
-            {year} ShoePalace. All rights reserved.
+            {year} {tenant.name}. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
             <Link

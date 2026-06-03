@@ -8,15 +8,15 @@ import { formatPrice } from "@/utils/product";
 
 export function useCart() {
   const items = useCartItems();
-  const total = useCartTotal();
+  const subtotal = useCartTotal();
   const item_count = useCartItemCount();
   const actions = useCartActions();
 
   return {
     items,
-    total,
+    subtotal,
     item_count,
-    formattedTotal: formatPrice(total),
+    formattedTotal: formatPrice(subtotal),
     isEmpty: items.length === 0,
     ...actions,
   };

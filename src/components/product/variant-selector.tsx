@@ -198,6 +198,19 @@ export function VariantSelector({
           </span>
         </motion.div>
       )}
+
+      {/* Low / out of stock warnings */}
+      {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= 3 && (
+        <p className="text-xs text-yellow-600 uppercase tracking-widest">
+          Only {selectedVariant.stock} left
+        </p>
+      )}
+
+      {selectedVariant && selectedVariant.stock === 0 && (
+        <p className="text-xs text-red-500 uppercase tracking-widest">
+          Out of stock
+        </p>
+      )}
     </div>
   );
 }

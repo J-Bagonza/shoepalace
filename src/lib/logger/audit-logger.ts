@@ -11,13 +11,21 @@ export type AuditAction =
   | "auth.logout"
   | "auth.signup";
 
+type AuditMetadataValue =
+  | string
+  | number
+  | boolean
+  | null
+  | AuditMetadataValue[]
+  | { [key: string]: AuditMetadataValue };
+
 interface AuditEntry {
   adminId: string;
   adminRole: UserRole;
   action: AuditAction;
   targetType: string;
   targetId: string;
-  metadata?: Record<string, string | number | boolean>;
+  metadata?: Record<string, AuditMetadataValue>;
 }
 
 /**

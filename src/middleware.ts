@@ -1,8 +1,34 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { extractSubdomain, resolveTenantBySlug } from "@/lib/tenant/resolve-tenant";
+import { SHOEPALACE_SLUG } from "@/types/tenant";
 
 export async function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID();
+  const hostname = request.headers.get("host") ?? "localhost";
+
+  // =============================================
+  // TENANT RESOLUTION
+  // Fall back to ShoePalace on vercel.app and localhost
+  // until a custom domain + wildcard DNS is configured
+  // =============================================
+  const isVercelApp = hostname.endsWith(".vercel.app");
+  const isLocalhost = hostname === "localhost" || hostname.startsWith("localhost:");
+  const subdomain = (isVercelApp || isLocalhost)
+    ? SHOEPALACE_SLUG
+    : extractSubdomain(hostname);
+
+  const tenant = await resolveTenantBySlug(subdomain);
+
+  if (!tenant) {
+    return new NextResponse(
+      JSON.stringify({ error: "Store not found." }),
+      {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
 
   let response = NextResponse.next({
     request: {
@@ -11,6 +37,8 @@ export async function middleware(request: NextRequest) {
   });
 
   response.headers.set("x-request-id", requestId);
+  response.headers.set("x-tenant-id", tenant.id);
+  response.headers.set("x-tenant-slug", tenant.slug);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,8 +48,10 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-
         setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
           response = NextResponse.next({
             request: {
               headers: request.headers,
@@ -29,6 +59,8 @@ export async function middleware(request: NextRequest) {
           });
 
           response.headers.set("x-request-id", requestId);
+          response.headers.set("x-tenant-id", tenant.id);
+          response.headers.set("x-tenant-slug", tenant.slug);
 
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, {
@@ -43,7 +75,6 @@ export async function middleware(request: NextRequest) {
     },
   );
 
-  // Get authenticated user once
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -51,17 +82,14 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isAdminRoute = pathname.startsWith("/admin");
-
   const isAuthRoute =
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup");
 
-  // Redirect unauthenticated users away from admin routes
   if (isAdminRoute && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Redirect authenticated users away from auth pages
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL("/", request.url));
   }

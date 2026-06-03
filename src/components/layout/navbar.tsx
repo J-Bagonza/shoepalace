@@ -7,6 +7,7 @@ import { motion, useScroll } from "framer-motion";
 import { useCartItemCount } from "@/store/cart";
 import { useCartControls } from "@/store/ui";
 import { createClient } from "@/lib/supabase/client";
+import { useTenant } from "@/lib/tenant/context";
 import { clsx } from "clsx";
 
 const NAV_LINKS = [
@@ -34,6 +35,19 @@ function PersonIcon() {
       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
       <circle cx="12" cy="7" r="4" />
     </svg>
+  );
+}
+
+function TenantLogo() {
+  const tenant = useTenant();
+  return (
+    <Link
+      href="/"
+      className="font-bebas text-2xl tracking-wider text-neutral-900
+        hover:text-[#E8001D] transition-colors duration-200"
+    >
+      {tenant.name}
+    </Link>
   );
 }
 
@@ -126,13 +140,7 @@ export function Navbar() {
           aria-label="Main navigation"
         >
           {/* Logo */}
-          <Link
-            href="/"
-            className="font-bebas text-2xl tracking-wider text-neutral-900
-              hover:text-[#E8001D] transition-colors duration-200"
-          >
-            ShoePalace
-          </Link>
+          <TenantLogo />
 
           {/* Desktop nav links */}
           <ul className="hidden md:flex items-center gap-8" role="list">

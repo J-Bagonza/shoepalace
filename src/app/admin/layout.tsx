@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import Link from "next/link";
 
 export default async function AdminLayout({
   children,
@@ -20,9 +21,18 @@ export default async function AdminLayout({
           <span className="font-bebas text-xl tracking-wider text-neutral-900">
             ShoePalace Admin
           </span>
-          <span className="text-xs text-neutral-400 uppercase tracking-widest">
-            {user.email}
-          </span>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/admin/settings"
+              className="text-xs uppercase tracking-widest text-neutral-400
+                hover:text-neutral-900 transition-colors"
+            >
+              Settings
+            </Link>
+            <span className="text-xs text-neutral-400 uppercase tracking-widest">
+              {user.email}
+            </span>
+          </div>
         </div>
       </header>
       <div className="mx-auto max-w-7xl px-6 py-8">{children}</div>
