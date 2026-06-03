@@ -37,7 +37,6 @@ vi.mock("@/lib/security/with-auth", () => ({
 }));
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { requireAuth } from "@/lib/security/with-auth";
 import { GET as getProducts } from "@/app/api/products/route";
 
 type MockClient = ReturnType<typeof createServerSupabaseClient>;

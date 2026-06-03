@@ -1,6 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { signupSchema, signinSchema } from "@/lib/validations/auth";
-
+import { describe, it, expect } from "vitest";
+import { signupSchema } from "@/lib/validations/auth";
 describe("Auth security — input validation", () => {
   it("strips unknown fields from signup payload", () => {
     const result = signupSchema.safeParse({
