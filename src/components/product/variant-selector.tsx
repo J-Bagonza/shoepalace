@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { clsx } from "clsx";
-import { getAvailableSizes, getAvailableColors, getVariantStock } from "@/utils/product";
+import { getAvailableSizes, getAvailableColors } from "@/utils/product";
 import type { Product, ProductVariant } from "@/types/product";
 
 interface VariantSelectorProps {

@@ -5,12 +5,11 @@ import { useCallback } from "react";
 import { buildSearchParams, parseFiltersFromParams } from "@/lib/products/filters";
 import type { ActiveFilters, SortOption } from "@/lib/products/filters";
 
-export function useFilters(_initial: ActiveFilters) {
+export function useFilters() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Derive current filters from the URL — stable reference via searchParams
   const current = parseFiltersFromParams(
     Object.fromEntries(searchParams.entries())
   );
@@ -21,7 +20,6 @@ export function useFilters(_initial: ActiveFilters) {
       const qs = buildSearchParams(next);
       router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    // searchParams (not current) is the stable dependency here
     [searchParams, pathname, router],
   );
 
@@ -51,7 +49,7 @@ export function useFilters(_initial: ActiveFilters) {
       const qs = buildSearchParams(next);
       router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: true });
     },
-    [searchParams, pathname, router],
+    [searchParams, pathname, router, current],
   );
 
   const clearFilters = useCallback(() => {

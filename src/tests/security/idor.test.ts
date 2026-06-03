@@ -32,7 +32,6 @@ vi.mock("@/lib/logger/audit-logger", () => ({
 }));
 
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 
 
 const VICTIM_USER_ID  = "aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa";
