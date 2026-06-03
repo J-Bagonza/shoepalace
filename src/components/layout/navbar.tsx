@@ -121,8 +121,7 @@ export function Navbar() {
   }, [pathname]);
 
   async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch("/api/auth/signout", { method: "POST" });
     setAuthState("unauthenticated");
     window.location.href = "/";
   }
