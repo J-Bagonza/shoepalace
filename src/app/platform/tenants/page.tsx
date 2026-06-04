@@ -63,13 +63,13 @@ export default async function PlatformTenantsPage() {
                 </td>
                 <td className="px-5 py-4">
                   <a
-                    href={`https://${tenant.slug}.shoepalace.com`}
+                    href={`https://${tenant.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-neutral-500 hover:text-neutral-900
                       transition-colors underline underline-offset-2"
                   >
-                    {tenant.slug}.shoepalace.com
+                    {tenant.slug}.{process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}
                   </a>
                 </td>
                 <td className="px-5 py-4">

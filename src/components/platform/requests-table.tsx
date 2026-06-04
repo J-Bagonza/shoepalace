@@ -63,7 +63,7 @@ function RequestRow({ request }: { request: TenantRequest }) {
             {request.store_name}
           </p>
           <p className="text-xs text-neutral-400 font-mono">
-            {request.slug}.shoepalace.com
+            {request.slug}.{process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}
           </p>
         </div>
         <span className="text-[10px] uppercase tracking-widest text-neutral-400">

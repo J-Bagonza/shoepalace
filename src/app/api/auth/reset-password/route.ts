@@ -22,7 +22,7 @@ async function handler(req: Request): Promise<Response> {
   const supabase = createServerSupabaseClient();
 
   const rootDomain =
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.com";
+    process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
   const resetPasswordUrl = `https://${
     process.env.NODE_ENV === "development"
       ? "localhost:3000"

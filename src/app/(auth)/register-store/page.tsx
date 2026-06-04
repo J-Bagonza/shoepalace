@@ -139,7 +139,7 @@ export default function RegisterStorePage() {
             <p className="text-sm text-neutral-500 leading-relaxed">
               Thank you. Your store application for{" "}
               <span className="font-medium text-neutral-900">
-                {values.slug}.shoepalace.com
+                {values.slug}.{process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}
               </span>{" "}
               has been submitted.
             </p>
@@ -228,7 +228,7 @@ export default function RegisterStorePage() {
                   focus-within:border-neutral-900 transition-colors">
                   <span className="px-3 py-3 text-xs text-neutral-400
                     bg-neutral-50 border-r border-neutral-200 shrink-0">
-                    shoepalace.com/
+                    {process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}/
                   </span>
                   <input
                     type="text"
@@ -248,7 +248,7 @@ export default function RegisterStorePage() {
                   <p className="text-[10px] text-neutral-400">
                     Your store will be at{" "}
                     <span className="font-medium text-neutral-600">
-                      {values.slug}.shoepalace.com
+                      {values.slug}.{process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}
                     </span>
                   </p>
                 )}

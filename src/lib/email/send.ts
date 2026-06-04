@@ -60,7 +60,7 @@ export async function getTenantEmailContext(tenantId: string): Promise<{
     .eq("id", tenantId)
     .single<Tenant>();
 
-  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.com";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
   const appUrl = tenant?.slug
     ? `https://${tenant.slug}.${rootDomain}`
     : `https://${rootDomain}`;

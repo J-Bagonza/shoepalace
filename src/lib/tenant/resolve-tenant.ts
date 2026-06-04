@@ -4,6 +4,7 @@ import { SHOEPALACE_SLUG } from "@/types/tenant";
 
 // Cache tenant lookups in memory for the lifetime of the serverless instance
 // Prevents a DB query on every single request
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
 const tenantCache = new Map<string, Tenant | null>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const cacheTimestamps = new Map<string, number>();
@@ -34,8 +35,8 @@ export function extractSubdomain(hostname: string): string {
 
   // shoepalace.com (root domain — default tenant)
   if (
-    host === "shoepalace.com" ||
-    host === "www.shoepalace.com"
+    host === ROOT_DOMAIN ||
+    host === `www.${ROOT_DOMAIN}`
   ) {
     return SHOEPALACE_SLUG;
   }

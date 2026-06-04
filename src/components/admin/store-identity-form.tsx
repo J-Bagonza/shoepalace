@@ -75,7 +75,7 @@ export function StoreIdentityForm({ tenant }: StoreIdentityFormProps) {
       <div className="flex flex-col gap-2">
         <Input
           label="Your Store URL"
-          value={`${tenant.slug}.shoepalace.com`}
+          value={`${tenant.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}`}
           disabled
           onChange={() => {}}
         />
