@@ -709,6 +709,47 @@ export type Database = {
           },
         ]
       }
+      tenant_invite_tokens: {
+        Row: {
+          id: string
+          tenant_id: string
+          email: string
+          token: string
+          used: boolean
+          used_by: string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          email: string
+          token?: string
+          used?: boolean
+          used_by?: string | null
+          expires_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          email?: string
+          token?: string
+          used?: boolean
+          used_by?: string | null
+          expires_at?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_invite_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           id: string

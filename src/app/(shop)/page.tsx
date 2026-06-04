@@ -1,37 +1,56 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { parseFiltersFromParams } from "@/lib/products/filters";
-import { fetchProducts } from "@/lib/products/fetch-products";
-import { ProductCatalog } from "@/components/product/product-catalog";
-import { ProductGridSkeleton } from "@/components/ui/skeleton";
+import { getTenantFromHeaders } from "@/lib/tenant/server-tenant";
+import { SHOEPALACE_SLUG } from "@/types/tenant";
+import { PlatformHomePage } from "@/components/platform/platform-home";
+import { StoreHomePage } from "@/components/home/store-home";
+import { fetchStoresDirectory } from "@/lib/platform/fetch-stores-directory";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import type { Product } from "@/types/product";
 
-export const metadata: Metadata = {
-  title: "Shop",
-  description: "Browse the full ShoePalace collection.",
-};
+export default async function RootPage() {
+  const tenant = await getTenantFromHeaders();
 
-interface PageProps {
-  searchParams: Record<string, string | string[] | undefined>;
-}
+  // If this is the platform root domain — show directory
+  if (!tenant || tenant.slug === SHOEPALACE_SLUG) {
+    const stores = await fetchStoresDirectory();
+    return <PlatformHomePage stores={stores} />;
+  }
 
-export default async function ProductsPage({ searchParams }: PageProps) {
-  const filters = parseFiltersFromParams(searchParams);
-  const result = await fetchProducts(filters);
+  // Otherwise show the tenant store homepage
+  const admin = createAdminSupabaseClient();
+  await admin.rpc("set_tenant_context", { p_tenant_id: tenant.id });
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Page header */}
-      <div className="border-b border-neutral-100 py-10 bg-[#F5F0E8]">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <h1 className="font-bebas text-display-md text-neutral-900">
-            All Styles
-          </h1>
-        </div>
-      </div>
+  const { data: featuredProducts } = await admin
+    .from("products")
+    .select(`
+      id, name, slug, description, price, category,
+      is_featured, model_url, deleted_at, created_at, updated_at,
+      product_images ( id, url, alt, position ),
+      product_variants ( id, size, color, stock )
+    `)
+    .eq("tenant_id", tenant.id)
+    .eq("is_featured", true)
+    .is("deleted_at", null)
+    .limit(4);
 
-      <Suspense fallback={<ProductGridSkeleton count={24} />}>
-        <ProductCatalog initialResult={result} initialFilters={filters} />
-      </Suspense>
-    </div>
-  );
+  const products: Product[] = (featuredProducts ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    slug: p.slug,
+    description: p.description,
+    price: p.price,
+    category: p.category,
+    is_featured: p.is_featured,
+    model_url: p.model_url ?? null,
+    deleted_at: p.deleted_at ?? null,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+    images: ((p.product_images ?? []) as {
+      id: string; url: string; alt: string; position: number;
+    }[]).sort((a, b) => a.position - b.position),
+    variants: (p.product_variants ?? []) as {
+      id: string; size: string; color: string; stock: number;
+    }[],
+  }));
+
+  return <StoreHomePage featuredProducts={products} tenant={tenant} />;
 }

@@ -3,6 +3,8 @@ import { withRateLimit } from "@/lib/security/with-rate-limit";
 import { requireAuth } from "@/lib/security/with-auth";
 import { validateBody, validateParams } from "@/lib/validations/request";
 import { createRequestLogger } from "@/lib/logger/request-logger";
+import { sendEmail } from "@/lib/email/send";
+import { storeApprovedTemplate } from "@/lib/email/templates/store-approved";
 import { z } from "zod";
 import type { ApiResponse } from "@/types/api";
 
@@ -45,6 +47,25 @@ async function handler(
   const admin = createAdminSupabaseClient();
 
   if (action === "approve") {
+    // Fetch request details before approving so we have them for the email
+    const { data: request } = await admin
+      .from("tenant_requests")
+      .select("store_name, owner_email, owner_name, slug")
+      .eq("id", id)
+      .single<{
+        store_name: string;
+        owner_email: string;
+        owner_name: string;
+        slug: string;
+      }>();
+
+    if (!request) {
+      return Response.json(
+        { data: null, error: "Request not found.", status: 404 },
+        { status: 404 },
+      );
+    }
+
     const { data: tenantId, error } = await admin.rpc(
       "approve_tenant_request",
       {
@@ -70,9 +91,47 @@ async function handler(
       );
     }
 
+    // Create invite token and send approval email
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tokenRow } = await (admin as any)
+      .from("tenant_invite_tokens")
+      .insert({
+        tenant_id: tenantId as string,
+        email: request.owner_email,
+      })
+      .select("token")
+      .single() as { data: { token: string } | null };
+
+    if (tokenRow?.token) {
+      const rootDomain =
+        process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
+      const setupUrl = `https://${request.slug}.${rootDomain}/setup?token=${tokenRow.token}`;
+      const storeUrl = `https://${request.slug}.${rootDomain}`;
+
+      const { subject, html } = storeApprovedTemplate({
+        storeName: request.store_name,
+        ownerName: request.owner_name,
+        ownerEmail: request.owner_email,
+        storeUrl,
+        setupUrl,
+        logoUrl: null,
+      });
+
+      sendEmail({
+        to: request.owner_email,
+        subject,
+        html,
+      }).catch((err) =>
+        log.error(
+          { requestId, event: "platform.approval.email.error" },
+          String(err),
+        ),
+      );
+    }
+
     log.info(
       { requestId, event: "platform.request.approved", id, tenantId },
-      "Tenant request approved",
+      "Tenant request approved + invite sent",
     );
 
     const body: ApiResponse<{ tenantId: string }> = {

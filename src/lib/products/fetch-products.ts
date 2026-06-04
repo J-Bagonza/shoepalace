@@ -1,4 +1,5 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import { getCache, setCache } from "@/lib/redis/cache";
 import { productCacheKeys } from "./cache-keys";
 import { applySortOrder, PRODUCT_SELECT } from "./queries";
@@ -34,13 +35,17 @@ export async function fetchProducts(
   const cached = await getCache<PaginatedResponse<Product>>(cacheKey);
   if (cached) return cached;
 
-  const supabase = createServerSupabaseClient();
+  const tenantId = getTenantIdFromHeaders();
+  const supabase = createAdminSupabaseClient();
+  await supabase.rpc("set_tenant_context", { p_tenant_id: tenantId });
+
   const from = (filters.page - 1) * filters.page_size;
   const to = from + filters.page_size - 1;
 
   let query = supabase
     .from("products")
     .select(PRODUCT_SELECT, { count: "exact" })
+    .eq("tenant_id", tenantId)
     .is("deleted_at", null)
     .range(from, to);
 

@@ -1,4 +1,5 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import { getCache, setCache } from "@/lib/redis/cache";
 import { productCacheKeys } from "./cache-keys";
 import { PRODUCT_SELECT } from "./queries";
@@ -11,18 +12,20 @@ export async function fetchSingleProduct(
   const cached = await getCache<Product>(cacheKey);
   if (cached) return cached;
 
-  const supabase = createServerSupabaseClient();
+  const tenantId = getTenantIdFromHeaders();
+  const supabase = createAdminSupabaseClient();
+  await supabase.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
     .eq("slug", slug)
+    .eq("tenant_id", tenantId)
     .is("deleted_at", null)
     .single();
 
   if (error || !data) return null;
 
-  // Map nested relations to match Product type
   const product: Product = {
     id: data.id,
     name: data.name,
@@ -67,12 +70,15 @@ export async function fetchRelatedProducts(
   product: Product,
   limit = 4,
 ): Promise<Product[]> {
-  const supabase = createServerSupabaseClient();
+  const tenantId = getTenantIdFromHeaders();
+  const supabase = createAdminSupabaseClient();
+  await supabase.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
   const { data, error } = await supabase
     .from("products")
     .select(PRODUCT_SELECT)
     .eq("category", product.category)
+    .eq("tenant_id", tenantId)
     .is("deleted_at", null)
     .neq("id", product.id)
     .limit(limit);
