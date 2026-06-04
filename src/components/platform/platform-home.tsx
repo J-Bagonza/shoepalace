@@ -184,7 +184,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </header>
 
       {/* Hero */}
-      <section className="pt-[46px] min-h-[70vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[56px] min-h-[60vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
 
         {/* ── Video background — full bleed, right-weighted ── */}
         <div className="absolute inset-0 z-0">
@@ -235,7 +235,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         </div>
 
         {/* ── Hero content — pinned left ── */}
-        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-16">
+        {/* was py-16 */}
+        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-12">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -246,10 +247,10 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
               <span className="text-xs uppercase tracking-[0.3em] text-white/50">
                 Kenya&apos;s Premier Footwear Marketplace
               </span>
-              <h1 className="font-bebas text-[72px] md:text-[108px] leading-none tracking-tight">
-                <p>Every Shoe.</p><br />
-                <p>Every Store.</p>
-              </h1>
+              <h1 className="font-bebas text-[72px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
+                Every Shoe.<br />
+                Every Store.
+            </h1>
               <p className="text-sm text-white/55 max-w-md leading-relaxed">
                 ShoePalace connects Kenya&apos;s best footwear stores with
                 customers who care about quality. Browse stores, discover
