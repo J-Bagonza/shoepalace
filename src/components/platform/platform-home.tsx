@@ -247,8 +247,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 Kenya&apos;s Premier Footwear Marketplace
               </span>
               <h1 className="font-bebas text-[72px] md:text-[108px] leading-none tracking-tight">
-                Every Shoe.<br />
-                Every Store.
+                <p>Every Shoe.</p><br />
+                <p>Every Store.</p>
               </h1>
               <p className="text-sm text-white/55 max-w-md leading-relaxed">
                 ShoePalace connects Kenya&apos;s best footwear stores with
