@@ -2,14 +2,243 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { formatPrice } from "@/utils/product";
+import { createClient } from "@/lib/supabase/client";
 import type { StoreWithProducts } from "@/lib/platform/fetch-stores-directory";
 
 interface PlatformHomeProps {
   stores: StoreWithProducts[];
 }
 
+type PlatformAuthState = "loading" | "unauthenticated" | "user" | "platform_admin";
+
+function usePlatformAuth() {
+  const [state, setState] = useState<PlatformAuthState>("loading");
+  const [email, setEmail] = useState<string>("");
+
+  useEffect(() => {
+    async function resolve() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        setState("unauthenticated");
+        return;
+      }
+
+      setEmail(user.email ?? "");
+
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json() as { data: { role: string } | null };
+          if (json.data?.role === "platform_admin") {
+            setState("platform_admin");
+          } else {
+            setState("user");
+          }
+        } else {
+          setState("unauthenticated");
+        }
+      } catch {
+        setState("unauthenticated");
+      }
+    }
+
+    void resolve();
+
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        setState("unauthenticated");
+        setEmail("");
+      } else if (event === "SIGNED_IN") {
+        void resolve();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setState("unauthenticated");
+    setEmail("");
+  }
+
+  return { state, email, signOut };
+}
+
+// ─── Platform Navbar ─────────────────────────────────────────────
+function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
+  const { state, email, signOut } = usePlatformAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-neutral-100">
+      <nav className="mx-auto max-w-7xl px-6 lg:px-8 h-[56px] flex items-center justify-between">
+
+        <Link
+          href="/"
+          className="font-bebas text-2xl tracking-wider text-neutral-900 hover:text-[#E8001D] transition-colors"
+        >
+          ShoePalace
+        </Link>
+
+        <ul className="hidden md:flex items-center gap-8">
+          {[
+            { href: "/#shops", label: "Shops" },
+            { href: "/#running", label: "Running" },
+            { href: "/#lifestyle", label: "Lifestyle" },
+            { href: "/#hiking", label: "Hiking" },
+          ].map((link) => (
+            <li key={link.href}>
+              <a
+                href={link.href}
+                className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
+              >
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+
+        <div className="flex items-center gap-4">
+          {state === "loading" && (
+            <div className="h-4 w-16 bg-neutral-100 animate-pulse rounded" />
+          )}
+
+          {state === "unauthenticated" && (
+            <Link
+              href="/login"
+              className="text-xs uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors"
+            >
+              Sign In
+            </Link>
+          )}
+
+          {state === "platform_admin" && (
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="flex items-center gap-2 text-xs uppercase tracking-widest text-neutral-900 hover:text-[#E8001D] transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="hidden sm:block">Platform</span>
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+              </button>
+
+              <AnimatePresence>
+                {menuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-52 bg-white border border-neutral-100 shadow-lg z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-neutral-100">
+                      <p className="text-[10px] uppercase tracking-widest text-neutral-400">Signed in as</p>
+                      <p className="text-xs text-neutral-700 truncate mt-0.5">{email}</p>
+                      <span className="inline-flex items-center gap-1 mt-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                        <span className="text-[10px] text-green-600 uppercase tracking-widest">Platform Admin</span>
+                      </span>
+                    </div>
+                    <div className="py-1">
+                      <Link href="/platform" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
+                        <span>Platform Dashboard</span>
+                        <span className="ml-auto text-neutral-300">→</span>
+                      </Link>
+                      <Link href="/platform/requests" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
+                        <span>Store Requests</span>
+                        <span className="ml-auto text-neutral-300">→</span>
+                      </Link>
+                      <Link href="/platform/tenants" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-xs text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors">
+                        <span>All Stores</span>
+                        <span className="ml-auto text-neutral-300">→</span>
+                      </Link>
+                    </div>
+                    <div className="border-t border-neutral-100 py-1">
+                      <button
+                        onClick={() => { setMenuOpen(false); void signOut(); }}
+                        className="w-full flex items-center px-4 py-2.5 text-xs text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 transition-colors text-left"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {menuOpen && (
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              )}
+            </div>
+          )}
+
+          {state === "user" && (
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="text-neutral-400 hover:text-neutral-900 transition-colors"
+                aria-label="Account menu"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </button>
+
+              <AnimatePresence>
+                {menuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-44 bg-white border border-neutral-100 shadow-lg z-50"
+                  >
+                    <div className="px-4 py-3 border-b border-neutral-100">
+                      <p className="text-xs text-neutral-600 truncate">{email}</p>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => { setMenuOpen(false); void signOut(); }}
+                        className="w-full text-left px-4 py-2.5 text-xs text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {menuOpen && (
+                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              )}
+            </div>
+          )}
+
+          <Link
+            href="/register-store"
+            className="bg-neutral-900 text-white px-5 py-2 text-xs uppercase tracking-widest hover:bg-[#E8001D] transition-colors hidden sm:block"
+          >
+            Open a Store
+          </Link>
+        </div>
+      </nav>
+    </header>
+  );
+}
+
+// ─── Product Carousel ─────────────────────────────────────────────
 function ProductCarousel({
   products,
   storeSlug,
@@ -17,15 +246,12 @@ function ProductCarousel({
   products: StoreWithProducts["products"];
   storeSlug: string;
 }) {
-  const rootDomain =
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
 
   if (products.length === 0) {
     return (
       <div className="flex items-center justify-center h-40 bg-[#F5F0E8]">
-        <p className="text-xs uppercase tracking-widest text-neutral-400">
-          No products yet
-        </p>
+        <p className="text-xs uppercase tracking-widest text-neutral-400">No products yet</p>
       </div>
     );
   }
@@ -35,12 +261,7 @@ function ProductCarousel({
       <motion.div
         className="flex gap-3"
         animate={{ x: ["0%", "-50%"] }}
-        transition={{
-          duration: products.length * 3,
-          repeat: Infinity,
-          ease: "linear",
-          repeatType: "loop",
-        }}
+        transition={{ duration: products.length * 3, repeat: Infinity, ease: "linear", repeatType: "loop" }}
         style={{ width: "max-content" }}
       >
         {[...products, ...products].map((product, i) => (
@@ -64,12 +285,8 @@ function ProductCarousel({
                 <div className="w-full h-full bg-[#F5F0E8]" />
               )}
             </div>
-            <p className="text-[11px] font-medium text-neutral-900 truncate">
-              {product.name}
-            </p>
-            <p className="text-[11px] text-neutral-500">
-              {formatPrice(product.price)}
-            </p>
+            <p className="text-[11px] font-medium text-neutral-900 truncate">{product.name}</p>
+            <p className="text-[11px] text-neutral-500">{formatPrice(product.price)}</p>
           </a>
         ))}
       </motion.div>
@@ -77,9 +294,9 @@ function ProductCarousel({
   );
 }
 
+// ─── Store Card ───────────────────────────────────────────────────
 function StoreCard({ store }: { store: StoreWithProducts }) {
-  const rootDomain =
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
   const storeUrl = `https://${store.tenant.slug}.${rootDomain}`;
 
   return (
@@ -88,25 +305,17 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.4 }}
-      className="border border-neutral-100 bg-white overflow-hidden group"
+      className="border border-neutral-100 bg-white overflow-hidden"
     >
       <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
         <div className="flex items-center gap-3">
           {store.tenant.logo_url ? (
             <div className="relative h-8 w-8 overflow-hidden rounded-sm bg-[#F5F0E8]">
-              <Image
-                src={store.tenant.logo_url}
-                alt={store.tenant.name}
-                fill
-                sizes="32px"
-                className="object-contain p-0.5"
-              />
+              <Image src={store.tenant.logo_url} alt={store.tenant.name} fill sizes="32px" className="object-contain p-0.5" />
             </div>
           ) : (
             <div className="h-8 w-8 bg-neutral-900 flex items-center justify-center">
-              <span className="text-white text-xs font-bold uppercase">
-                {store.tenant.name.charAt(0)}
-              </span>
+              <span className="text-white text-xs font-bold uppercase">{store.tenant.name.charAt(0)}</span>
             </div>
           )}
           <div className="flex flex-col gap-0">
@@ -118,9 +327,7 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
             >
               {store.tenant.name}
             </a>
-            <span className="text-[10px] text-neutral-400">
-              {store.tenant.slug}.shoepalace.store
-            </span>
+            <span className="text-[10px] text-neutral-400">{store.tenant.slug}.shoepalace.store</span>
           </div>
         </div>
         <a
@@ -132,111 +339,45 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
           Visit →
         </a>
       </div>
-
       <div className="px-5 py-4">
-        <ProductCarousel
-          products={store.products}
-          storeSlug={store.tenant.slug}
-        />
+        <ProductCarousel products={store.products} storeSlug={store.tenant.slug} />
       </div>
     </motion.div>
   );
 }
 
+// ─── Main Platform Page ───────────────────────────────────────────
 export function PlatformHomePage({ stores }: PlatformHomeProps) {
   return (
     <div className="min-h-screen bg-white">
-      {/* Platform Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-neutral-100">
-        <nav className="mx-auto max-w-7xl px-6 lg:px-8 h-[56px] flex items-center justify-between">
-          <Link
-            href="/"
-            className="font-bebas text-2xl tracking-wider text-neutral-900 hover:text-[#E8001D] transition-colors"
-          >
-            ShoePalace
-          </Link>
-
-          <ul className="hidden md:flex items-center gap-8">
-            {[
-              { href: "/#shops", label: "Shops" },
-              { href: "/#running", label: "Running" },
-              { href: "/#lifestyle", label: "Lifestyle" },
-              { href: "/#hiking", label: "Hiking" },
-            ].map((link) => (
-              <li key={link.href}>
-                <a
-                  href={link.href}
-                  className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-
-          <Link
-            href="/register-store"
-            className="bg-neutral-900 text-white px-5 py-2.5 text-xs uppercase tracking-widest hover:bg-[#E8001D] transition-colors"
-          >
-            Open a Store
-          </Link>
-        </nav>
-      </header>
+      <PlatformNavbar stores={stores} />
 
       {/* Hero */}
       <section className="pt-[56px] min-h-[58vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
-
-        {/* ── Video background — full bleed, right-weighted ── */}
         <div className="absolute inset-0 z-0">
           <video
             src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/V9Crop_144147.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
+            autoPlay loop muted playsInline
             className="absolute inset-0 w-full h-full object-cover object-center"
             style={{ opacity: 0.7 }}
           />
-          {/* Layer 1: reduce from /50 to /20 */}
-             <div className="absolute inset-0 bg-[#0A0A0A]/20" />
-
-          {/* Layer 2: lighten the left gradient */}
-            <div
-               className="absolute inset-0"
-                style={{
-                        background:
-                               "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 25%, rgba(10,10,10,0.4) 50%, rgba(10,10,10,0.05) 100%)",
-                       }}
-            />
-          {/* Layer 3: bottom fade into next section */}
-          <div
-            className="absolute bottom-0 left-0 right-0 h-32"
-            style={{
-              background: "linear-gradient(to top, #0A0A0A, transparent)",
-            }}
-          />
+          <div className="absolute inset-0 bg-[#0A0A0A]/20" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 25%, rgba(10,10,10,0.4) 50%, rgba(10,10,10,0.05) 100%)" }} />
+          <div className="absolute bottom-0 left-0 right-0 h-32" style={{ background: "linear-gradient(to top, #0A0A0A, transparent)" }} />
         </div>
 
-        {/* ── SP watermarks — above video, below content ── */}
         <div className="absolute inset-0 z-[1] pointer-events-none select-none overflow-hidden">
           {Array.from({ length: 20 }).map((_, i) => (
             <div
               key={i}
               className="absolute font-bebas text-[120px] font-black uppercase tracking-tighter"
-              style={{
-                left: `${(i % 5) * 25}%`,
-                top: `${Math.floor(i / 5) * 33}%`,
-                color: "white",
-                opacity: 0.08,
-              }}
+              style={{ left: `${(i % 5) * 25}%`, top: `${Math.floor(i / 5) * 33}%`, color: "white", opacity: 0.08 }}
             >
               SP
             </div>
           ))}
         </div>
 
-        {/* ── Hero content — pinned left ── */}
-        {/* was py-16 */}
         <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-6">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -251,23 +392,20 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
               <h1 className="font-bebas text-[36px] sm:text-[56px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
                 Every Shoe.<br />
                 Every Store.
-            </h1>
+              </h1>
               <p className="text-sm text-white/55 max-w-md leading-relaxed">
-                ShoePalace connects Kenya&apos;s best footwear stores with
-                customers who care about quality. Browse stores, discover
-                exclusive drops, and shop directly from verified vendors.
+                ShoePalace connects Kenya&apos;s best footwear stores with customers who care about quality.
+                Browse stores, discover exclusive drops, and shop directly from verified vendors.
               </p>
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
-              {/* White-background primary CTA */}
               <a
                 href="#shops"
                 className="bg-white text-neutral-900 px-8 py-3.5 text-xs uppercase tracking-widest border border-white hover:bg-[#E8001D] hover:border-[#E8001D] hover:text-white transition-colors"
               >
                 Browse Stores
               </a>
-              {/* Ghost outline secondary CTA */}
               <Link
                 href="/register-store"
                 className="bg-transparent text-white px-8 py-3.5 text-xs uppercase tracking-widest border border-white/40 hover:border-white transition-colors"
@@ -283,12 +421,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 { value: "M-Pesa", label: "Payments" },
               ].map((stat) => (
                 <div key={stat.label} className="flex flex-col gap-0.5">
-                  <span className="font-bebas text-2xl tracking-wide text-white">
-                    {stat.value}
-                  </span>
-                  <span className="text-[10px] uppercase tracking-widest text-white/40">
-                    {stat.label}
-                  </span>
+                  <span className="font-bebas text-2xl tracking-wide text-white">{stat.value}</span>
+                  <span className="text-[10px] uppercase tracking-widest text-white/40">{stat.label}</span>
                 </div>
               ))}
             </div>
@@ -301,32 +435,14 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              {
-                step: "01",
-                title: "Browse Stores",
-                body: "Explore verified shoe stores from across Kenya. Each store is reviewed before going live.",
-              },
-              {
-                step: "02",
-                title: "Shop Directly",
-                body: "Visit any store, browse their catalogue, and order shoes delivered straight to you.",
-              },
-              {
-                step: "03",
-                title: "Pay via M-Pesa",
-                body: "Every store accepts M-Pesa. Pay instantly and track your order in real time.",
-              },
+              { step: "01", title: "Browse Stores", body: "Explore verified shoe stores from across Kenya. Each store is reviewed before going live." },
+              { step: "02", title: "Shop Directly", body: "Visit any store, browse their catalogue, and order shoes delivered straight to you." },
+              { step: "03", title: "Pay via M-Pesa", body: "Every store accepts M-Pesa. Pay instantly and track your order in real time." },
             ].map((item) => (
               <div key={item.step} className="flex flex-col gap-3">
-                <span className="font-bebas text-5xl text-neutral-200 leading-none">
-                  {item.step}
-                </span>
-                <h3 className="text-sm font-medium uppercase tracking-widest text-neutral-900">
-                  {item.title}
-                </h3>
-                <p className="text-sm text-neutral-500 leading-relaxed">
-                  {item.body}
-                </p>
+                <span className="font-bebas text-5xl text-neutral-200 leading-none">{item.step}</span>
+                <h3 className="text-sm font-medium uppercase tracking-widest text-neutral-900">{item.title}</h3>
+                <p className="text-sm text-neutral-500 leading-relaxed">{item.body}</p>
               </div>
             ))}
           </div>
@@ -338,30 +454,20 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex items-end justify-between mb-10">
             <div className="flex flex-col gap-2">
-              <h2 className="font-bebas text-4xl md:text-5xl tracking-wide text-neutral-900">
-                Verified Stores
-              </h2>
+              <h2 className="font-bebas text-4xl md:text-5xl tracking-wide text-neutral-900">Verified Stores</h2>
               <p className="text-sm text-neutral-400">
                 {stores.length} store{stores.length !== 1 ? "s" : ""} on the platform
               </p>
             </div>
-            <Link
-              href="/register-store"
-              className="hidden md:block text-xs uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors underline underline-offset-4"
-            >
+            <Link href="/register-store" className="hidden md:block text-xs uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors underline underline-offset-4">
               Open your store →
             </Link>
           </div>
 
           {stores.length === 0 ? (
             <div className="border border-neutral-100 py-24 text-center">
-              <p className="text-sm text-neutral-400 uppercase tracking-widest mb-4">
-                No stores yet
-              </p>
-              <Link
-                href="/register-store"
-                className="text-xs uppercase tracking-widest text-neutral-900 underline underline-offset-4 hover:text-[#E8001D] transition-colors"
-              >
+              <p className="text-sm text-neutral-400 uppercase tracking-widest mb-4">No stores yet</p>
+              <Link href="/register-store" className="text-xs uppercase tracking-widest text-neutral-900 underline underline-offset-4 hover:text-[#E8001D] transition-colors">
                 Be the first to open a store
               </Link>
             </div>
@@ -375,29 +481,21 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         </div>
       </section>
 
-      {/* CTA — open a store */}
+      {/* CTA */}
       <section className="bg-[#0A0A0A] text-white py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex flex-col gap-3">
-            <h2 className="font-bebas text-4xl tracking-wide">
-              Sell on ShoePalace
-            </h2>
+            <h2 className="font-bebas text-4xl tracking-wide">Sell on ShoePalace</h2>
             <p className="text-sm text-white/60 max-w-md leading-relaxed">
-              Get your own store at yourname.shoepalace.store. We handle
-              the platform — you focus on selling. Applications reviewed
-              within 24 hours.
+              Get your own store at yourname.shoepalace.store. We handle the platform — you focus on selling.
+              Applications reviewed within 24 hours.
             </p>
           </div>
           <div className="flex flex-col gap-3 shrink-0">
-            <Link
-              href="/register-store"
-              className="bg-white text-neutral-900 px-8 py-4 text-xs uppercase tracking-widest text-center hover:bg-[#E8001D] hover:text-white transition-colors"
-            >
+            <Link href="/register-store" className="bg-white text-neutral-900 px-8 py-4 text-xs uppercase tracking-widest text-center hover:bg-[#E8001D] hover:text-white transition-colors">
               Apply to Open a Store
             </Link>
-            <p className="text-[10px] text-white/30 text-center uppercase tracking-widest">
-              Free to apply · Reviewed by hand
-            </p>
+            <p className="text-[10px] text-white/30 text-center uppercase tracking-widest">Free to apply · Reviewed by hand</p>
           </div>
         </div>
       </section>
@@ -405,9 +503,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       {/* Footer */}
       <footer className="border-t border-neutral-100 py-8">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
-          <span className="font-bebas text-xl tracking-widest text-neutral-900">
-            ShoePalace
-          </span>
+          <span className="font-bebas text-xl tracking-widest text-neutral-900">ShoePalace</span>
           <p className="text-[10px] text-neutral-400 uppercase tracking-widest">
             {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear marketplace.
           </p>
