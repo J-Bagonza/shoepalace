@@ -248,7 +248,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
               <span className="text-xs uppercase tracking-[0.3em] text-white/50">
                 Kenya&apos;s Premier Footwear Marketplace
               </span>
-              <h1 className="font-bebas text-[72px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
+              <h1 className="font-bebas text-[36px] sm:text-[56px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
                 Every Shoe.<br />
                 Every Store.
             </h1>
