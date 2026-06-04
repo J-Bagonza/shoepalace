@@ -184,7 +184,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </header>
 
       {/* Hero */}
-      <section className="pt-[56px] min-h-[70vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[46px] min-h-[70vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
 
         {/* ── Video background — full bleed, right-weighted ── */}
         <div className="absolute inset-0 z-0">
