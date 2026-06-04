@@ -186,7 +186,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       {/* Hero */}
       <section className="pt-[56px] min-h-[70vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
 
-        {/* ── Video background ── */}
+        {/* ── Video background — full bleed, right-weighted ── */}
         <div className="absolute inset-0 z-0">
           <video
             src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/V9Crop_144147.mp4"
@@ -194,16 +194,30 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             loop
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.35 }}
+            className="absolute inset-0 w-full h-full object-cover object-center"
+            style={{ opacity: 0.4 }}
           />
-          <div className="absolute inset-0 bg-[#0A0A0A]/40" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+          {/* Layer 1: global dark veil so video never overpowers text */}
+          <div className="absolute inset-0 bg-[#0A0A0A]/50" />
+          {/* Layer 2: strong left fade — text zone is fully opaque dark */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 38%, rgba(10,10,10,0.6) 60%, rgba(10,10,10,0.15) 100%)",
+            }}
+          />
+          {/* Layer 3: bottom fade into next section */}
+          <div
+            className="absolute bottom-0 left-0 right-0 h-32"
+            style={{
+              background: "linear-gradient(to top, #0A0A0A, transparent)",
+            }}
+          />
         </div>
 
-        {/* ── SP watermark grid ── */}
-        <div className="absolute inset-0 z-[1] opacity-[0.03] pointer-events-none select-none overflow-hidden">
+        {/* ── SP watermarks — above video, below content ── */}
+        <div className="absolute inset-0 z-[1] pointer-events-none select-none overflow-hidden">
           {Array.from({ length: 20 }).map((_, i) => (
             <div
               key={i}
@@ -212,6 +226,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 left: `${(i % 5) * 25}%`,
                 top: `${Math.floor(i / 5) * 33}%`,
                 color: "white",
+                opacity: 0.025,
               }}
             >
               SP
@@ -219,23 +234,23 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
           ))}
         </div>
 
-        {/* ── Hero content ── */}
-        <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 py-16">
+        {/* ── Hero content — pinned left ── */}
+        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-16">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col gap-8 max-w-3xl"
+            className="flex flex-col gap-8 max-w-xl"
           >
             <div className="flex flex-col gap-4">
               <span className="text-xs uppercase tracking-[0.3em] text-white/50">
                 Kenya&apos;s Premier Footwear Marketplace
               </span>
-              <h1 className="font-bebas text-[80px] md:text-[120px] leading-none tracking-tight">
+              <h1 className="font-bebas text-[72px] md:text-[108px] leading-none tracking-tight">
                 Every Shoe.<br />
                 Every Store.
               </h1>
-              <p className="text-base text-white/60 max-w-lg leading-relaxed">
+              <p className="text-sm text-white/55 max-w-md leading-relaxed">
                 ShoePalace connects Kenya&apos;s best footwear stores with
                 customers who care about quality. Browse stores, discover
                 exclusive drops, and shop directly from verified vendors.
@@ -243,15 +258,17 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             </div>
 
             <div className="flex items-center gap-4 flex-wrap">
+              {/* White-background primary CTA */}
               <a
                 href="#shops"
-                className="bg-white text-neutral-900 px-8 py-4 text-xs uppercase tracking-widest hover:bg-[#E8001D] hover:text-white transition-colors"
+                className="bg-white text-neutral-900 px-8 py-3.5 text-xs uppercase tracking-widest border border-white hover:bg-[#E8001D] hover:border-[#E8001D] hover:text-white transition-colors"
               >
                 Browse Stores
               </a>
+              {/* Ghost outline secondary CTA */}
               <Link
                 href="/register-store"
-                className="border border-white/30 text-white px-8 py-4 text-xs uppercase tracking-widest hover:border-white transition-colors"
+                className="bg-transparent text-white px-8 py-3.5 text-xs uppercase tracking-widest border border-white/40 hover:border-white transition-colors"
               >
                 Open Your Store
               </Link>
