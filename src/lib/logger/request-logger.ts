@@ -1,5 +1,6 @@
 import { logger } from "./index";
 import { randomUUID } from "crypto";
+import * as Sentry from "@sentry/nextjs";
 
 export interface RequestContext {
   requestId: string;
@@ -12,6 +13,7 @@ export interface RequestContext {
  * Creates a child logger bound to a single request lifecycle.
  * Reads x-request-id header if set by middleware.
  * IP is hashed — never stored raw.
+ * All log.error calls are automatically forwarded to Sentry.
  */
 export function createRequestLogger(req: Request): {
   log: typeof logger;
@@ -25,12 +27,41 @@ export function createRequestLogger(req: Request): {
     req.headers.get("x-forwarded-for") ?? "unknown";
   const hashedIp = hashIp(rawIp);
 
-  const log = logger.child({
+  const child = logger.child({
     requestId,
     method: req.method,
     path: url.pathname,
     ip: hashedIp,
   });
+
+  // Wrap the child logger so every .error() call also
+  // captures to Sentry automatically — no per-route changes needed
+  const log = new Proxy(child, {
+    get(target, prop) {
+      if (prop === "error") {
+        return (obj: Record<string, unknown>, msg?: string) => {
+          // Forward to Sentry
+          const error = obj["err"] instanceof Error
+            ? obj["err"]
+            : new Error(msg ?? obj["event"] as string ?? "Unknown error");
+
+          Sentry.captureException(error, {
+            tags: {
+              requestId,
+              event: obj["event"] as string ?? "unknown",
+              path: url.pathname,
+              method: req.method,
+            },
+            extra: obj,
+          });
+
+          // Still log normally
+          return target.error(obj, msg);
+        };
+      }
+      return target[prop as keyof typeof target];
+    },
+  }) as typeof logger;
 
   return { log, requestId };
 }
