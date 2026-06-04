@@ -43,7 +43,6 @@ function ProductCarousel({
         }}
         style={{ width: "max-content" }}
       >
-        {/* Duplicate for seamless loop */}
         {[...products, ...products].map((product, i) => (
           <a
             key={`${product.id}-${i}`}
@@ -52,16 +51,14 @@ function ProductCarousel({
             rel="noopener noreferrer"
             className="flex-shrink-0 w-36 group"
           >
-            <div className="relative aspect-square bg-[#F5F0E8] overflow-hidden
-              mb-2">
+            <div className="relative aspect-square bg-[#F5F0E8] overflow-hidden mb-2">
               {product.image_url ? (
                 <Image
                   src={product.image_url}
                   alt={product.name}
                   fill
                   sizes="144px"
-                  className="object-cover group-hover:scale-105
-                    transition-transform duration-300"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
                 <div className="w-full h-full bg-[#F5F0E8]" />
@@ -93,13 +90,10 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
       transition={{ duration: 0.4 }}
       className="border border-neutral-100 bg-white overflow-hidden group"
     >
-      {/* Store header */}
-      <div className="flex items-center justify-between px-5 py-4
-        border-b border-neutral-100">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
         <div className="flex items-center gap-3">
           {store.tenant.logo_url ? (
-            <div className="relative h-8 w-8 overflow-hidden rounded-sm
-              bg-[#F5F0E8]">
+            <div className="relative h-8 w-8 overflow-hidden rounded-sm bg-[#F5F0E8]">
               <Image
                 src={store.tenant.logo_url}
                 alt={store.tenant.name}
@@ -109,8 +103,7 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
               />
             </div>
           ) : (
-            <div className="h-8 w-8 bg-neutral-900 flex items-center
-              justify-center">
+            <div className="h-8 w-8 bg-neutral-900 flex items-center justify-center">
               <span className="text-white text-xs font-bold uppercase">
                 {store.tenant.name.charAt(0)}
               </span>
@@ -121,8 +114,7 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
               href={storeUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-neutral-900 hover:text-[#E8001D]
-                transition-colors leading-tight"
+              className="text-sm font-medium text-neutral-900 hover:text-[#E8001D] transition-colors leading-tight"
             >
               {store.tenant.name}
             </a>
@@ -135,14 +127,12 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
           href={storeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[10px] uppercase tracking-widest text-neutral-400
-            hover:text-neutral-900 transition-colors"
+          className="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
         >
           Visit →
         </a>
       </div>
 
-      {/* Product carousel */}
       <div className="px-5 py-4">
         <ProductCarousel
           products={store.products}
@@ -157,14 +147,11 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* Platform Navbar */}
-      <header className="fixed top-0 left-0 right-0 z-30 bg-white
-        border-b border-neutral-100">
-        <nav className="mx-auto max-w-7xl px-6 lg:px-8 h-[72px] flex
-          items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-neutral-100">
+        <nav className="mx-auto max-w-7xl px-6 lg:px-8 h-[56px] flex items-center justify-between">
           <Link
             href="/"
-            className="font-bebas text-2xl tracking-wider text-neutral-900
-              hover:text-[#E8001D] transition-colors"
+            className="font-bebas text-2xl tracking-wider text-neutral-900 hover:text-[#E8001D] transition-colors"
           >
             ShoePalace
           </Link>
@@ -179,8 +166,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
               <li key={link.href}>
                 <a
                   href={link.href}
-                  className="text-xs uppercase tracking-widest text-neutral-400
-                    hover:text-neutral-900 transition-colors"
+                  className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
                 >
                   {link.label}
                 </a>
@@ -190,8 +176,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
           <Link
             href="/register-store"
-            className="bg-neutral-900 text-white px-5 py-2.5 text-xs
-              uppercase tracking-widest hover:bg-[#E8001D] transition-colors"
+            className="bg-neutral-900 text-white px-5 py-2.5 text-xs uppercase tracking-widest hover:bg-[#E8001D] transition-colors"
           >
             Open a Store
           </Link>
@@ -199,20 +184,34 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </header>
 
       {/* Hero */}
-      <section className="pt-[72px] min-h-[70vh] flex items-center
-        bg-[#0A0A0A] text-white relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-5">
+      <section className="pt-[56px] min-h-[70vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+
+        {/* ── Video background ── */}
+        <div className="absolute inset-0 z-0">
+          <video
+            src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/V9Crop_144147.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ opacity: 0.35 }}
+          />
+          <div className="absolute inset-0 bg-[#0A0A0A]/40" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0A0A0A] via-[#0A0A0A]/80 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[#0A0A0A] to-transparent" />
+        </div>
+
+        {/* ── SP watermark grid ── */}
+        <div className="absolute inset-0 z-[1] opacity-[0.03] pointer-events-none select-none overflow-hidden">
           {Array.from({ length: 20 }).map((_, i) => (
             <div
               key={i}
-              className="absolute text-[120px] font-black uppercase
-                tracking-tighter select-none"
+              className="absolute font-bebas text-[120px] font-black uppercase tracking-tighter"
               style={{
                 left: `${(i % 5) * 25}%`,
                 top: `${Math.floor(i / 5) * 33}%`,
                 color: "white",
-                opacity: 0.3,
               }}
             >
               SP
@@ -220,7 +219,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
           ))}
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-6 lg:px-8 py-24">
+        {/* ── Hero content ── */}
+        <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 py-16">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -228,12 +228,10 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             className="flex flex-col gap-8 max-w-3xl"
           >
             <div className="flex flex-col gap-4">
-              <span className="text-xs uppercase tracking-[0.3em]
-                text-white/50">
+              <span className="text-xs uppercase tracking-[0.3em] text-white/50">
                 Kenya&apos;s Premier Footwear Marketplace
               </span>
-              <h1 className="font-bebas text-[80px] md:text-[120px] leading-none
-                tracking-tight">
+              <h1 className="font-bebas text-[80px] md:text-[120px] leading-none tracking-tight">
                 Every Shoe.<br />
                 Every Store.
               </h1>
@@ -247,36 +245,29 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             <div className="flex items-center gap-4 flex-wrap">
               <a
                 href="#shops"
-                className="bg-white text-neutral-900 px-8 py-4 text-xs
-                  uppercase tracking-widest hover:bg-[#E8001D]
-                  hover:text-white transition-colors"
+                className="bg-white text-neutral-900 px-8 py-4 text-xs uppercase tracking-widest hover:bg-[#E8001D] hover:text-white transition-colors"
               >
                 Browse Stores
               </a>
               <Link
                 href="/register-store"
-                className="border border-white/30 text-white px-8 py-4
-                  text-xs uppercase tracking-widest hover:border-white
-                  transition-colors"
+                className="border border-white/30 text-white px-8 py-4 text-xs uppercase tracking-widest hover:border-white transition-colors"
               >
                 Open Your Store
               </Link>
             </div>
 
-            <div className="flex items-center gap-8 pt-4 border-t
-              border-white/10">
+            <div className="flex items-center gap-8 pt-4 border-t border-white/10">
               {[
                 { value: stores.length.toString(), label: "Active Stores" },
                 { value: "Kenya", label: "Market" },
                 { value: "M-Pesa", label: "Payments" },
               ].map((stat) => (
                 <div key={stat.label} className="flex flex-col gap-0.5">
-                  <span className="font-bebas text-2xl tracking-wide
-                    text-white">
+                  <span className="font-bebas text-2xl tracking-wide text-white">
                     {stat.value}
                   </span>
-                  <span className="text-[10px] uppercase tracking-widest
-                    text-white/40">
+                  <span className="text-[10px] uppercase tracking-widest text-white/40">
                     {stat.label}
                   </span>
                 </div>
@@ -308,12 +299,10 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
               },
             ].map((item) => (
               <div key={item.step} className="flex flex-col gap-3">
-                <span className="font-bebas text-5xl text-neutral-200
-                  leading-none">
+                <span className="font-bebas text-5xl text-neutral-200 leading-none">
                   {item.step}
                 </span>
-                <h3 className="text-sm font-medium uppercase tracking-widest
-                  text-neutral-900">
+                <h3 className="text-sm font-medium uppercase tracking-widest text-neutral-900">
                   {item.title}
                 </h3>
                 <p className="text-sm text-neutral-500 leading-relaxed">
@@ -330,20 +319,16 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex items-end justify-between mb-10">
             <div className="flex flex-col gap-2">
-              <h2 className="font-bebas text-4xl md:text-5xl tracking-wide
-                text-neutral-900">
+              <h2 className="font-bebas text-4xl md:text-5xl tracking-wide text-neutral-900">
                 Verified Stores
               </h2>
               <p className="text-sm text-neutral-400">
-                {stores.length} store{stores.length !== 1 ? "s" : ""} on
-                the platform
+                {stores.length} store{stores.length !== 1 ? "s" : ""} on the platform
               </p>
             </div>
             <Link
               href="/register-store"
-              className="hidden md:block text-xs uppercase tracking-widest
-                text-neutral-500 hover:text-neutral-900 transition-colors
-                underline underline-offset-4"
+              className="hidden md:block text-xs uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors underline underline-offset-4"
             >
               Open your store →
             </Link>
@@ -351,15 +336,12 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
           {stores.length === 0 ? (
             <div className="border border-neutral-100 py-24 text-center">
-              <p className="text-sm text-neutral-400 uppercase tracking-widest
-                mb-4">
+              <p className="text-sm text-neutral-400 uppercase tracking-widest mb-4">
                 No stores yet
               </p>
               <Link
                 href="/register-store"
-                className="text-xs uppercase tracking-widest text-neutral-900
-                  underline underline-offset-4 hover:text-[#E8001D]
-                  transition-colors"
+                className="text-xs uppercase tracking-widest text-neutral-900 underline underline-offset-4 hover:text-[#E8001D] transition-colors"
               >
                 Be the first to open a store
               </Link>
@@ -376,8 +358,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
       {/* CTA — open a store */}
       <section className="bg-[#0A0A0A] text-white py-20">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col
-          md:flex-row items-center justify-between gap-8">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex flex-col gap-3">
             <h2 className="font-bebas text-4xl tracking-wide">
               Sell on ShoePalace
@@ -391,14 +372,11 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
           <div className="flex flex-col gap-3 shrink-0">
             <Link
               href="/register-store"
-              className="bg-white text-neutral-900 px-8 py-4 text-xs
-                uppercase tracking-widest text-center hover:bg-[#E8001D]
-                hover:text-white transition-colors"
+              className="bg-white text-neutral-900 px-8 py-4 text-xs uppercase tracking-widest text-center hover:bg-[#E8001D] hover:text-white transition-colors"
             >
               Apply to Open a Store
             </Link>
-            <p className="text-[10px] text-white/30 text-center uppercase
-              tracking-widest">
+            <p className="text-[10px] text-white/30 text-center uppercase tracking-widest">
               Free to apply · Reviewed by hand
             </p>
           </div>
@@ -407,14 +385,12 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
       {/* Footer */}
       <footer className="border-t border-neutral-100 py-8">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 flex items-center
-          justify-between flex-wrap gap-4">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
           <span className="font-bebas text-xl tracking-widest text-neutral-900">
             ShoePalace
           </span>
           <p className="text-[10px] text-neutral-400 uppercase tracking-widest">
-            {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear
-            marketplace.
+            {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear marketplace.
           </p>
         </div>
       </footer>
