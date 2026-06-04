@@ -227,7 +227,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 left: `${(i % 5) * 25}%`,
                 top: `${Math.floor(i / 5) * 33}%`,
                 color: "white",
-                opacity: 0.025,
+                opacity: 0.08,
               }}
             >
               SP
