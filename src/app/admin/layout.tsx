@@ -1,5 +1,10 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth/session";
+import {
+  fetchOnboardingState,
+  getOnboardingProgress,
+} from "@/lib/onboarding/fetch-onboarding";
 import Link from "next/link";
 
 export default async function AdminLayout({
@@ -10,8 +15,22 @@ export default async function AdminLayout({
   const user = await getAuthenticatedUser();
 
   // SECURITY: server-side role check — middleware is defense in depth only
-  if (!user || user.role !== "admin") {
+  if (!user || (user.role !== "admin" && user.role !== "platform_admin")) {
     redirect("/login");
+  }
+
+  // Check onboarding — only redirect if not already on onboarding route
+  const headersList = headers();
+  const pathname = headersList.get("x-invoke-path") ?? "";
+
+  if (!pathname.includes("/onboarding")) {
+    const onboarding = await fetchOnboardingState();
+    if (onboarding && !onboarding.completed_at) {
+      const { allDone, nextStep } = getOnboardingProgress(onboarding);
+      if (!allDone && nextStep) {
+        redirect(nextStep);
+      }
+    }
   }
 
   return (

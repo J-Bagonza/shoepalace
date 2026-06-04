@@ -461,54 +461,6 @@ export type Database = {
           },
         ]
       }
-      tenant_requests: {
-        Row: {
-          id: string
-          store_name: string
-          slug: string
-          owner_email: string
-          owner_name: string
-          phone: string | null
-          description: string | null
-          status: string
-          rejection_note: string | null
-          reviewed_by: string | null
-          reviewed_at: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          store_name: string
-          slug: string
-          owner_email: string
-          owner_name: string
-          phone?: string | null
-          description?: string | null
-          status?: string
-          rejection_note?: string | null
-          reviewed_by?: string | null
-          reviewed_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          store_name?: string
-          slug?: string
-          owner_email?: string
-          owner_name?: string
-          phone?: string | null
-          description?: string | null
-          status?: string
-          rejection_note?: string | null
-          reviewed_by?: string | null
-          reviewed_at?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       stock_movements: {
         Row: {
           id: string
@@ -574,6 +526,50 @@ export type Database = {
           },
         ]
       }
+      tenant_onboarding: {
+        Row: {
+          id: string
+          tenant_id: string
+          step_identity: boolean
+          step_contact: boolean
+          step_first_product: boolean
+          step_payment: boolean
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          step_identity?: boolean
+          step_contact?: boolean
+          step_first_product?: boolean
+          step_payment?: boolean
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          step_identity?: boolean
+          step_contact?: boolean
+          step_first_product?: boolean
+          step_payment?: boolean
+          completed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_onboarding_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_payment_settings: {
         Row: {
           id: string
@@ -611,6 +607,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tenant_requests: {
+        Row: {
+          id: string
+          store_name: string
+          slug: string
+          owner_email: string
+          owner_name: string
+          phone: string | null
+          description: string | null
+          status: string
+          rejection_note: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          store_name: string
+          slug: string
+          owner_email: string
+          owner_name: string
+          phone?: string | null
+          description?: string | null
+          status?: string
+          rejection_note?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          store_name?: string
+          slug?: string
+          owner_email?: string
+          owner_name?: string
+          phone?: string | null
+          description?: string | null
+          status?: string
+          rejection_note?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tenant_settings: {
         Row: {
@@ -672,6 +716,7 @@ export type Database = {
           slug: string
           logo_url: string | null
           is_active: boolean
+          onboarding_complete: boolean
           created_at: string
           updated_at: string
         }
@@ -681,6 +726,7 @@ export type Database = {
           slug: string
           logo_url?: string | null
           is_active?: boolean
+          onboarding_complete?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -690,6 +736,7 @@ export type Database = {
           slug?: string
           logo_url?: string | null
           is_active?: boolean
+          onboarding_complete?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -935,8 +982,6 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-    
 
 export const Constants = {
   public: {
