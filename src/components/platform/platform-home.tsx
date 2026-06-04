@@ -195,18 +195,19 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             muted
             playsInline
             className="absolute inset-0 w-full h-full object-cover object-center"
-            style={{ opacity: 0.25 }}
+            style={{ opacity: 0.7 }}
           />
-          {/* Layer 1: global dark veil so video never overpowers text */}
-          <div className="absolute inset-0 bg-[#0A0A0A]/50" />
-          {/* Layer 2: strong left fade — text zone is fully opaque dark */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 38%, rgba(10,10,10,0.6) 60%, rgba(10,10,10,0.15) 100%)",
-            }}
-          />
+          {/* Layer 1: reduce from /50 to /20 */}
+             <div className="absolute inset-0 bg-[#0A0A0A]/20" />
+
+          {/* Layer 2: lighten the left gradient */}
+            <div
+               className="absolute inset-0"
+                style={{
+                        background:
+                               "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 25%, rgba(10,10,10,0.4) 50%, rgba(10,10,10,0.05) 100%)",
+                       }}
+            />
           {/* Layer 3: bottom fade into next section */}
           <div
             className="absolute bottom-0 left-0 right-0 h-32"
@@ -236,7 +237,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
         {/* ── Hero content — pinned left ── */}
         {/* was py-16 */}
-        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-10">
+        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-6">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
