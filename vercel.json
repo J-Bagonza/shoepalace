@@ -30,17 +30,6 @@
       "source": "/shop",
       "destination": "/products",
       "permanent": true
-    },
-    {
-      "source": "/(.*)",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.shoepalace.store"
-        }
-      ],
-      "destination": "https://shoepalace.store/$1",
-      "permanent": true
     }
   ]
 }
