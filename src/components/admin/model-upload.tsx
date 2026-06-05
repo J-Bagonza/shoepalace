@@ -40,7 +40,6 @@ export function ModelUpload({
     setProgress(10);
 
     try {
-      // Step 1: Get a signed upload URL from our API
       const res = await fetch("/api/admin/uploads/signed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,12 +68,11 @@ export function ModelUpload({
 
       setProgress(30);
 
-      // Step 2: Upload directly to Supabase Storage (bypasses Vercel size limit)
       const supabase = createClient();
       const { error: uploadError } = await supabase.storage
         .from("product-models")
         .uploadToSignedUrl(path, token, file, {
-          contentType: file.type || "model/gltf-binary",
+          contentType: "model/gltf-binary",
         });
 
       if (uploadError) {
