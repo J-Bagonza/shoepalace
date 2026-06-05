@@ -213,18 +213,17 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         </div>
 
         {/* Color dots */}
-        {product.variants && product.variants.length > 0 && (
-          <div className="mt-2 flex gap-1.5 px-0.5">
-            {[...new Set(product.variants.map((v) => v.color))]
-              .slice(0, 4)
-              .map((color) => (
-                <span
-                  key={color}
-                  title={color}
-                  className="h-2.5 w-2.5 rounded-full border border-neutral-200
-                    bg-neutral-300"
-                />
-              ))}
+        {(product.variants ?? []).length > 0 && (
+  <div className="mt-2 flex gap-1.5 px-0.5">
+    {[...new Set((product.variants ?? []).map((v) => v.color))]
+      .slice(0, 4)
+      .map((color) => (
+        <span
+          key={color}
+          title={color}
+          className="h-2.5 w-2.5 rounded-full border border-neutral-200 bg-neutral-300"
+        />
+      ))}
           </div>
         )}
       </Link>
