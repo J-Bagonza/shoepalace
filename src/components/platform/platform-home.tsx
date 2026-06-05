@@ -18,35 +18,35 @@ function usePlatformAuth() {
   const [state, setState] = useState<PlatformAuthState>("loading");
   const [email, setEmail] = useState<string>("");
 
-  useEffect(() => {
-    async function resolve() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+  async function resolve() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user) {
-        setState("unauthenticated");
-        return;
-      }
-
-      setEmail(user.email ?? "");
-
-      try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
-        if (res.ok) {
-          const json = await res.json() as { data: { role: string } | null };
-          if (json.data?.role === "platform_admin") {
-            setState("platform_admin");
-          } else {
-            setState("user");
-          }
-        } else {
-          setState("unauthenticated");
-        }
-      } catch {
-        setState("unauthenticated");
-      }
+    if (!user) {
+      setState("unauthenticated");
+      return;
     }
 
+    setEmail(user.email ?? "");
+
+    try {
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json() as { data: { role: string } | null };
+        if (json.data?.role === "platform_admin") {
+          setState("platform_admin");
+        } else {
+          setState("user");
+        }
+      } else {
+        setState("unauthenticated");
+      }
+    } catch {
+      setState("unauthenticated");
+    }
+  }
+
+  useEffect(() => {
     void resolve();
 
     const supabase = createClient();
@@ -54,28 +54,41 @@ function usePlatformAuth() {
       if (event === "SIGNED_OUT") {
         setState("unauthenticated");
         setEmail("");
-      } else if (event === "SIGNED_IN") {
+      } else if (
+        event === "SIGNED_IN" ||
+        event === "TOKEN_REFRESHED" ||
+        event === "INITIAL_SESSION"
+      ) {
         void resolve();
       }
     });
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    // Use server route to properly clear the HTTP-only cookie
+    await fetch("/api/auth/signout", { method: "POST" });
     setState("unauthenticated");
     setEmail("");
+    window.location.href = "/";
   }
 
   return { state, email, signOut };
 }
 
 // ─── Platform Navbar ─────────────────────────────────────────────
-function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
+function PlatformNavbar() {
   const { state, email, signOut } = usePlatformAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const NAV_LINKS = [
+    { href: "/#shops", label: "Shops" },
+    { href: "/#how-it-works", label: "About" },
+    { href: "/#contact", label: "Contact" },
+  ];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-neutral-100">
@@ -88,13 +101,9 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
           ShoePalace
         </Link>
 
+        {/* Desktop nav links */}
         <ul className="hidden md:flex items-center gap-8">
-          {[
-            { href: "/#shops", label: "Shops" },
-            { href: "/#running", label: "Running" },
-            { href: "/#lifestyle", label: "Lifestyle" },
-            { href: "/#hiking", label: "Hiking" },
-          ].map((link) => (
+          {NAV_LINKS.map((link) => (
             <li key={link.href}>
               <a
                 href={link.href}
@@ -107,10 +116,12 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
         </ul>
 
         <div className="flex items-center gap-4">
+          {/* Loading skeleton */}
           {state === "loading" && (
             <div className="h-4 w-16 bg-neutral-100 animate-pulse rounded" />
           )}
 
+          {/* Unauthenticated */}
           {state === "unauthenticated" && (
             <Link
               href="/login"
@@ -120,6 +131,7 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
             </Link>
           )}
 
+          {/* Platform admin dropdown */}
           {state === "platform_admin" && (
             <div className="relative">
               <button
@@ -183,6 +195,7 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
             </div>
           )}
 
+          {/* Regular user dropdown */}
           {state === "user" && (
             <div className="relative">
               <button
@@ -232,8 +245,83 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
           >
             Open a Store
           </Link>
+
+          {/* Mobile hamburger */}
+          <button
+            onClick={() => setMobileOpen((v) => !v)}
+            className="flex md:hidden flex-col gap-1.5 p-1"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+          >
+            <motion.span animate={mobileOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }} className="block h-px w-5 bg-neutral-900 origin-center" />
+            <motion.span animate={mobileOpen ? { opacity: 0 } : { opacity: 1 }} className="block h-px w-5 bg-neutral-900" />
+            <motion.span animate={mobileOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }} className="block h-px w-5 bg-neutral-900 origin-center" />
+          </button>
         </div>
       </nav>
+
+      {/* Mobile menu */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden bg-white border-b border-neutral-100 px-6 py-6"
+          >
+            <ul className="flex flex-col gap-5">
+              {NAV_LINKS.map((link) => (
+                <li key={link.href}>
+                  <a
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors"
+                  >
+                    {link.label}
+                  </a>
+                </li>
+              ))}
+
+              {state === "platform_admin" && (
+                <>
+                  <li><Link href="/platform" onClick={() => setMobileOpen(false)} className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors">Platform Dashboard</Link></li>
+                  <li><Link href="/platform/requests" onClick={() => setMobileOpen(false)} className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors">Store Requests</Link></li>
+                  <li><Link href="/platform/tenants" onClick={() => setMobileOpen(false)} className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors">All Stores</Link></li>
+                </>
+              )}
+
+              <li>
+                <Link
+                  href="/register-store"
+                  onClick={() => setMobileOpen(false)}
+                  className="text-sm uppercase tracking-widest text-neutral-700 hover:text-[#E8001D] transition-colors"
+                >
+                  Open a Store
+                </Link>
+              </li>
+
+              <li className="pt-2 border-t border-neutral-100">
+                {state === "unauthenticated" && (
+                  <Link href="/login" className="text-sm uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors">
+                    Sign In
+                  </Link>
+                )}
+                {(state === "user" || state === "platform_admin") && (
+                  <div className="flex flex-col gap-3">
+                    <span className="text-[10px] text-neutral-400 uppercase tracking-widest truncate">{email}</span>
+                    <button
+                      onClick={() => { setMobileOpen(false); void signOut(); }}
+                      className="text-sm uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors text-left"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </li>
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
@@ -350,7 +438,7 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
 export function PlatformHomePage({ stores }: PlatformHomeProps) {
   return (
     <div className="min-h-screen bg-white">
-      <PlatformNavbar stores={stores} />
+      <PlatformNavbar />
 
       {/* Hero */}
       <section className="pt-[56px] min-h-[58vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
@@ -431,8 +519,15 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </section>
 
       {/* How it works */}
-      <section className="bg-[#F5F0E8] py-16 md:py-24">
+      <section id="how-it-works" className="bg-[#F5F0E8] py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="flex flex-col gap-3 mb-12">
+            <h2 className="font-bebas text-4xl md:text-5xl tracking-wide text-neutral-900">How It Works</h2>
+            <p className="text-sm text-neutral-500 max-w-lg">
+              ShoePalace is Kenya&apos;s multi-vendor footwear marketplace. Each store is independently run,
+              reviewed by our team, and powered by a shared platform so you always get a consistent experience.
+            </p>
+          </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { step: "01", title: "Browse Stores", body: "Explore verified shoe stores from across Kenya. Each store is reviewed before going live." },
@@ -500,10 +595,71 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         </div>
       </section>
 
+      {/* Contact */}
+      <section id="contact" className="py-16 md:py-24 bg-white">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-16 items-start">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-3">
+                <h2 className="font-bebas text-4xl md:text-5xl tracking-wide text-neutral-900">Get In Touch</h2>
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  Questions about the platform, your store application, or anything else?
+                  We&apos;re a small team based in Nairobi and we read every message.
+                </p>
+              </div>
+              <div className="flex flex-col gap-4">
+                {[
+                  { label: "Email", value: "hello@shoepalace.store", href: "mailto:hello@shoepalace.store" },
+                  { label: "Location", value: "Nairobi, Kenya", href: null },
+                  { label: "Response time", value: "Within 24 hours", href: null },
+                ].map((item) => (
+                  <div key={item.label} className="flex flex-col gap-0.5">
+                    <span className="text-[10px] uppercase tracking-widest text-neutral-400">{item.label}</span>
+                    {item.href ? (
+                      <a href={item.href} className="text-sm text-neutral-900 hover:text-[#E8001D] transition-colors">
+                        {item.value}
+                      </a>
+                    ) : (
+                      <span className="text-sm text-neutral-900">{item.value}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
+                <h3 className="text-sm font-medium uppercase tracking-widest text-neutral-900">Want to open a store?</h3>
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  Apply to join the platform. Applications are reviewed by hand and we&apos;ll get back to you within 24 hours.
+                </p>
+              </div>
+              <Link
+                href="/register-store"
+                className="inline-flex items-center gap-2 bg-neutral-900 text-white px-6 py-3 text-xs uppercase tracking-widest hover:bg-[#E8001D] transition-colors w-fit"
+              >
+                Apply Now →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-neutral-100 py-8">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
           <span className="font-bebas text-xl tracking-widest text-neutral-900">ShoePalace</span>
+          <div className="flex items-center gap-6">
+            {[
+              { href: "/#shops", label: "Shops" },
+              { href: "/#how-it-works", label: "About" },
+              { href: "/#contact", label: "Contact" },
+              { href: "/register-store", label: "Open a Store" },
+            ].map((link) => (
+              <a key={link.href} href={link.href} className="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors">
+                {link.label}
+              </a>
+            ))}
+          </div>
           <p className="text-[10px] text-neutral-400 uppercase tracking-widest">
             {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear marketplace.
           </p>
