@@ -1,4 +1,3 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { withRateLimit } from "@/lib/security/with-rate-limit";
 import { requireAuth } from "@/lib/security/with-auth";
@@ -15,109 +14,85 @@ const BUCKET_MAP = {
 async function handler(req: Request): Promise<Response> {
   const { log, requestId } = createRequestLogger(req);
 
-  // SECURITY: admin only
   const auth = await requireAuth(req, "admin");
   if (auth instanceof Response) return auth;
 
   let formData: FormData;
-
   try {
     formData = await req.formData();
   } catch {
-    const body: ApiResponse = {
-      data: null,
-      error: "Invalid form data.",
-      status: 400,
-    };
-    return Response.json(body, { status: 400 });
+    return Response.json(
+      { data: null, error: "Invalid form data.", status: 400 },
+      { status: 400 },
+    );
   }
 
   const file = formData.get("file");
   const productId = formData.get("productId");
   const uploadType = formData.get("type");
 
-  // SECURITY: validate all fields present
   if (!(file instanceof File)) {
-    const body: ApiResponse = {
-      data: null,
-      error: "No file provided.",
-      status: 400,
-    };
-    return Response.json(body, { status: 400 });
+    return Response.json(
+      { data: null, error: "No file provided.", status: 400 },
+      { status: 400 },
+    );
   }
 
   if (typeof productId !== "string" || typeof uploadType !== "string") {
-    const body: ApiResponse = {
-      data: null,
-      error: "Missing productId or type.",
-      status: 400,
-    };
-    return Response.json(body, { status: 400 });
+    return Response.json(
+      { data: null, error: "Missing productId or type.", status: 400 },
+      { status: 400 },
+    );
   }
 
   if (uploadType !== "image" && uploadType !== "model") {
-    const body: ApiResponse = {
-      data: null,
-      error: "Invalid upload type.",
-      status: 400,
-    };
-    return Response.json(body, { status: 400 });
+    return Response.json(
+      { data: null, error: "Invalid upload type.", status: 400 },
+      { status: 400 },
+    );
   }
 
-  // SECURITY: validate UUID format of productId
   if (!/^[0-9a-f-]{36}$/.test(productId)) {
-    const body: ApiResponse = {
-      data: null,
-      error: "Invalid product ID.",
-      status: 400,
-    };
-    return Response.json(body, { status: 400 });
+    return Response.json(
+      { data: null, error: "Invalid product ID.", status: 400 },
+      { status: 400 },
+    );
   }
 
-  // SECURITY: verify product exists before upload
-  const adminClient = createAdminSupabaseClient();
-  const { data: product, error: productError } = await adminClient
+  const admin = createAdminSupabaseClient();
+
+  // Verify product belongs to this tenant
+  const { data: product, error: productError } = await admin
     .from("products")
     .select("id")
     .eq("id", productId)
+    .eq("tenant_id", auth.tenantId)
     .single<{ id: string }>();
 
   if (productError || !product) {
-    const body: ApiResponse = {
-      data: null,
-      error: "Product not found.",
-      status: 404,
-    };
-    return Response.json(body, { status: 404 });
+    return Response.json(
+      { data: null, error: "Product not found.", status: 404 },
+      { status: 404 },
+    );
   }
 
-  // SECURITY: server-side file validation
   const validation = validateUploadedFile(file, uploadType);
   if (!validation.valid) {
-    const body: ApiResponse = {
-      data: null,
-      error: validation.error ?? "Invalid file.",
-      status: 422,
-    };
-    return Response.json(body, { status: 422 });
+    return Response.json(
+      { data: null, error: validation.error ?? "Invalid file.", status: 422 },
+      { status: 422 },
+    );
   }
 
-  // SECURITY: generate randomized path — never use client filename
-  const storagePath = generateStoragePath(
-    uploadType,
-    productId,
-    file.name,
-  );
-
+  const storagePath = generateStoragePath(uploadType, productId, file.name);
   const bucket = BUCKET_MAP[uploadType];
   const fileBuffer = await file.arrayBuffer();
 
-  const supabase = createServerSupabaseClient();
-
-  const { error: uploadError } = await supabase.storage
+  // Use admin client — bypasses storage RLS, no session context needed
+  const { error: uploadError } = await admin.storage
     .from(bucket)
     .upload(storagePath, fileBuffer, {
-      contentType: file.type,
+      contentType: uploadType === "model" ? "model/gltf-binary" : file.type,
       upsert: false,
     });
 
@@ -126,33 +101,24 @@ async function handler(req: Request): Promise<Response> {
       { requestId, event: "admin.upload.storage.error" },
       uploadError.message,
     );
-    const body: ApiResponse = {
-      data: null,
-      error: "Upload failed. Please try again.",
-      status: 500,
-    };
-    return Response.json(body, { status: 500 });
+    return Response.json(
+      { data: null, error: "Upload failed. Please try again.", status: 500 },
+      { status: 500 },
+    );
   }
 
-  // Get public URL
-  const { data: publicUrlData } = supabase.storage
+  const { data: publicUrlData } = admin.storage
     .from(bucket)
     .getPublicUrl(storagePath);
 
   const publicUrl = publicUrlData.publicUrl;
 
-  // If image upload — persist to product_images table
   if (uploadType === "image") {
-    const { error: imageInsertError } = await (adminClient as unknown as {
-      from: (table: string) => {
-        insert: (data: Record<string, unknown>) => Promise<{
-          error: { message: string } | null;
-        }>;
-      };
-    })
+    const { error: imageInsertError } = await admin
       .from("product_images")
       .insert({
         product_id: productId,
+        tenant_id: auth.tenantId,
         url: publicUrl,
         alt: "",
         position: 999,
@@ -172,10 +138,7 @@ async function handler(req: Request): Promise<Response> {
     action: "product.update",
     targetType: "product",
     targetId: productId,
-    metadata: {
-      uploadType,
-      path: storagePath,
-    },
+    metadata: { uploadType, path: storagePath },
   });
 
   log.info(
@@ -183,12 +146,10 @@ async function handler(req: Request): Promise<Response> {
     "File uploaded",
   );
 
-  const body: ApiResponse<{ url: string; path: string }> = {
-    data: { url: publicUrl, path: storagePath },
-    error: null,
-    status: 201,
-  };
-  return Response.json(body, { status: 201 });
+  return Response.json(
+    { data: { url: publicUrl, path: storagePath }, error: null, status: 201 },
+    { status: 201 },
+  );
 }
 
 export const POST = withRateLimit("upload", handler);

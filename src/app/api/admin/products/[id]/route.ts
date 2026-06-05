@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { validateBody, validateParams } from "@/lib/validations/request";
 import {
   updateProductSchema,
@@ -20,6 +20,16 @@ type ProductKey = {
   deleted_at: string | null;
 };
 
+type ProductUpdatePayload = {
+  name?: string;
+  slug?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  is_featured?: boolean;
+  model_url?: string | null;
+};
+
 function getParams(context?: Record<string, unknown>) {
   return context?.params as Record<string, string> | undefined;
 }
@@ -34,24 +44,21 @@ async function getHandler(req: Request, context?: Record<string, unknown>) {
   if (!validation.success) return validation.response;
 
   const { id } = validation.data;
-  const supabase = createServerSupabaseClient();
+  const admin = createAdminSupabaseClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("products")
     .select(PRODUCT_SELECT)
     .eq("id", id)
+    .eq("tenant_id", auth.tenantId)
     .single<Product>();
 
   if (error || !data) {
     log.warn({ requestId, event: "admin.product.get.not_found", id }, "Not found");
-
-    const body: ApiResponse = {
-      data: null,
-      error: "Product not found.",
-      status: 404,
-    };
-
-    return Response.json(body, { status: 404 });
+    return Response.json(
+      { data: null, error: "Product not found.", status: 404 },
+      { status: 404 },
+    );
   }
 
   return Response.json(
@@ -82,12 +89,13 @@ async function updateHandler(req: Request, context?: Record<string, unknown>) {
     );
   }
 
-  const supabase = createServerSupabaseClient();
+  const admin = createAdminSupabaseClient();
 
-  const { data: existing } = await supabase
+  const { data: existing } = await admin
     .from("products")
     .select("id, slug")
     .eq("id", id)
+    .eq("tenant_id", auth.tenantId)
     .single<Pick<Product, "id" | "slug">>();
 
   if (!existing) {
@@ -98,11 +106,12 @@ async function updateHandler(req: Request, context?: Record<string, unknown>) {
   }
 
   if (updateData.slug && updateData.slug !== existing.slug) {
-    const { data: slugConflict } = await supabase
+    const { data: slugConflict } = await admin
       .from("products")
       .select("id")
       .eq("slug", updateData.slug)
-      .single<{ id: string }>();
+      .eq("tenant_id", auth.tenantId)
+      .maybeSingle<{ id: string }>();
 
     if (slugConflict) {
       return Response.json(
@@ -112,20 +121,20 @@ async function updateHandler(req: Request, context?: Record<string, unknown>) {
     }
   }
 
-  const updatePayload: Record<string, string | number | boolean | null> = {};
-  if (updateData.name !== undefined) updatePayload["name"] = updateData.name;
-  if (updateData.slug !== undefined) updatePayload["slug"] = updateData.slug;
-  if (updateData.description !== undefined) updatePayload["description"] = updateData.description;
-  if (updateData.price !== undefined) updatePayload["price"] = updateData.price;
-  if (updateData.category !== undefined) updatePayload["category"] = updateData.category;
-  if (updateData.is_featured !== undefined) updatePayload["is_featured"] = updateData.is_featured;
-  if (updateData.model_url !== undefined) updatePayload["model_url"] = updateData.model_url ?? null;
+  const updatePayload: ProductUpdatePayload = {};
+  if (updateData.name !== undefined) updatePayload.name = updateData.name;
+  if (updateData.slug !== undefined) updatePayload.slug = updateData.slug;
+  if (updateData.description !== undefined) updatePayload.description = updateData.description;
+  if (updateData.price !== undefined) updatePayload.price = updateData.price;
+  if (updateData.category !== undefined) updatePayload.category = updateData.category;
+  if (updateData.is_featured !== undefined) updatePayload.is_featured = updateData.is_featured;
+  if (updateData.model_url !== undefined) updatePayload.model_url = updateData.model_url ?? null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await admin
     .from("products")
     .update(updatePayload)
     .eq("id", id)
+    .eq("tenant_id", auth.tenantId)
     .select(PRODUCT_SELECT)
     .single() as { data: Product | null; error: { message: string } | null };
 
@@ -134,7 +143,6 @@ async function updateHandler(req: Request, context?: Record<string, unknown>) {
       { requestId, event: "admin.product.update.error", id },
       error?.message ?? "unknown",
     );
-
     return Response.json(
       { data: null, error: "Failed to update product.", status: 500 },
       { status: 500 },
@@ -171,12 +179,13 @@ async function deleteHandler(req: Request, context?: Record<string, unknown>) {
   if (!validation.success) return validation.response;
 
   const { id } = validation.data;
-  const supabase = createServerSupabaseClient();
+  const admin = createAdminSupabaseClient();
 
-  const { data: existing } = await supabase
+  const { data: existing } = await admin
     .from("products")
     .select("id, slug, deleted_at")
     .eq("id", id)
+    .eq("tenant_id", auth.tenantId)
     .single<ProductKey>();
 
   if (!existing) {
@@ -193,15 +202,14 @@ async function deleteHandler(req: Request, context?: Record<string, unknown>) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await admin
     .from("products")
     .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id) as { error: { message: string } | null };
+    .eq("id", id)
+    .eq("tenant_id", auth.tenantId) as { error: { message: string } | null };
 
   if (error) {
     log.error({ requestId, event: "admin.product.delete.error" }, error.message);
-
     return Response.json(
       { data: null, error: "Failed to delete product.", status: 500 },
       { status: 500 },
@@ -236,12 +244,13 @@ async function restoreHandler(req: Request, context?: Record<string, unknown>) {
   if (!validation.success) return validation.response;
 
   const { id } = validation.data;
-  const supabase = createServerSupabaseClient();
+  const admin = createAdminSupabaseClient();
 
-  const { data: existing } = await supabase
+  const { data: existing } = await admin
     .from("products")
     .select("id, slug, deleted_at")
     .eq("id", id)
+    .eq("tenant_id", auth.tenantId)
     .single<ProductKey>();
 
   if (!existing) {
@@ -258,15 +267,14 @@ async function restoreHandler(req: Request, context?: Record<string, unknown>) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await admin
     .from("products")
     .update({ deleted_at: null })
-    .eq("id", id) as { error: { message: string } | null };
+    .eq("id", id)
+    .eq("tenant_id", auth.tenantId) as { error: { message: string } | null };
 
   if (error) {
     log.error({ requestId, event: "admin.product.restore.error" }, error.message);
-
     return Response.json(
       { data: null, error: "Failed to restore product.", status: 500 },
       { status: 500 },
