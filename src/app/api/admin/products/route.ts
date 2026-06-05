@@ -1,4 +1,5 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import { validateBody, validateQuery } from "@/lib/validations/request";
 import {
   createProductSchema,
@@ -25,18 +26,20 @@ async function listHandler(req: Request) {
 
   const { page, page_size, category, sort, search } = validation.data;
 
-  const supabase = createServerSupabaseClient();
+  const tenantId = getTenantIdFromHeaders();
+  const admin = createAdminSupabaseClient();
+  await admin.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
   const from = (page - 1) * page_size;
   const to = from + page_size - 1;
 
-  let query = supabase
+  let query = admin
     .from("products")
     .select(PRODUCT_SELECT, { count: "exact" })
+    .eq("tenant_id", tenantId)
     .range(from, to);
 
   if (category) query = query.eq("category", category);
-
   if (search) {
     query = query.ilike("name", `%${search.replace(/[%_\\]/g, "\\$&")}%`);
   }
@@ -47,7 +50,6 @@ async function listHandler(req: Request) {
 
   if (error) {
     log.error({ requestId }, error.message);
-
     return Response.json(
       { data: null, error: "Failed to fetch products.", status: 500 },
       { status: 500 },
@@ -57,12 +59,12 @@ async function listHandler(req: Request) {
   const total = count ?? 0;
 
   const result: PaginatedResponse<Product> = {
-  data: (data ?? []) as unknown as Product[],
-  total,
-  page,
-  page_size,
-  total_pages: Math.ceil(total / page_size),
-};
+    data: (data ?? []) as unknown as Product[],
+    total,
+    page,
+    page_size,
+    total_pages: Math.ceil(total / page_size),
+  };
 
   return Response.json(
     { data: result, error: null, status: 200 },
@@ -76,15 +78,35 @@ async function createHandler(req: Request) {
   const auth = await requireAuth(req, "admin");
   if (auth instanceof Response) return auth;
 
+  // Guard: tenant_id must be a valid UUID
+  if (!auth.tenantId || !/^[0-9a-f-]{36}$/.test(auth.tenantId)) {
+    log.error(
+      { requestId, event: "admin.products.create.no_tenant" },
+      `Invalid tenant_id: "${auth.tenantId}"`,
+    );
+    return Response.json(
+      {
+        data: null,
+        error: "Account not linked to a store. Contact support.",
+        status: 403,
+      },
+      { status: 403 },
+    );
+  }
+
   const validation = await validateBody(req, createProductSchema);
   if (!validation.success) return validation.response;
 
-  const supabase = createServerSupabaseClient();
+  const tenantId = auth.tenantId;
+  const admin = createAdminSupabaseClient();
+  await admin.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
-  const { data: existing } = await supabase
+  // Check slug uniqueness within this tenant only
+  const { data: existing } = await admin
     .from("products")
     .select("id")
     .eq("slug", validation.data.slug)
+    .eq("tenant_id", tenantId)
     .single<{ id: string }>();
 
   if (existing) {
@@ -94,9 +116,9 @@ async function createHandler(req: Request) {
     );
   }
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (admin as any)
     .from("products")
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .insert({
       name: validation.data.name,
       slug: validation.data.slug,
@@ -105,13 +127,13 @@ async function createHandler(req: Request) {
       category: validation.data.category,
       is_featured: validation.data.is_featured ?? false,
       model_url: validation.data.model_url ?? null,
-    } as any)
+      tenant_id: tenantId,
+    })
     .select(PRODUCT_SELECT)
-    .single<Product>();
+    .single() as { data: Product | null; error: { message: string } | null };
 
   if (error || !data) {
     log.error({ requestId }, error?.message ?? "unknown");
-
     return Response.json(
       { data: null, error: "Failed to create product.", status: 500 },
       { status: 500 },

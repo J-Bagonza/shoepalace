@@ -1,4 +1,5 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import { validateQuery } from "@/lib/validations/request";
 import { productListQuerySchema } from "@/lib/validations/product";
 import { withRateLimit } from "@/lib/security/with-rate-limit";
@@ -17,14 +18,18 @@ async function handler(req: Request): Promise<Response> {
 
   const { page, page_size, category, sort, search, featured } = validation.data;
 
-  // Build deterministic cache key from query params
+  const tenantId = getTenantIdFromHeaders();
+
+  // Build tenant-scoped cache key
   const url = new URL(req.url);
-  const cacheKey = productCacheKeys.list(url.searchParams.toString());
+  const cacheKey = productCacheKeys.list(
+    `${tenantId}:${url.searchParams.toString()}`,
+  );
 
   const cached = await getCache<PaginatedResponse<Product>>(cacheKey);
   if (cached) {
     log.debug({ requestId, event: "products.list.cache_hit" }, "Cache hit");
-   const cachedBody: ApiResponse<PaginatedResponse<Product>> = {
+    const cachedBody: ApiResponse<PaginatedResponse<Product>> = {
       data: cached,
       error: null,
       status: 200,
@@ -32,26 +37,22 @@ async function handler(req: Request): Promise<Response> {
     return Response.json(cachedBody, { status: 200 });
   }
 
-  const supabase = createServerSupabaseClient();
+  const admin = createAdminSupabaseClient();
+  await admin.rpc("set_tenant_context", { p_tenant_id: tenantId });
+
   const from = (page - 1) * page_size;
   const to = from + page_size - 1;
 
-  let query = supabase
+  let query = admin
     .from("products")
     .select(PRODUCT_SELECT, { count: "exact" })
+    .eq("tenant_id", tenantId)
     .is("deleted_at", null)
     .range(from, to);
 
-  if (category) {
-    query = query.eq("category", category);
-  }
-
-  if (featured !== undefined) {
-    query = query.eq("is_featured", featured);
-  }
-
+  if (category) query = query.eq("category", category);
+  if (featured !== undefined) query = query.eq("is_featured", featured);
   if (search) {
-    // SECURITY: parameterized ilike — no raw SQL interpolation
     query = query.ilike("name", `%${search.replace(/[%_\\]/g, "\\$&")}%`);
   }
 
@@ -61,12 +62,15 @@ async function handler(req: Request): Promise<Response> {
 
   if (error) {
     log.error({ requestId, event: "products.list.db_error" }, error.message);
-    const body: ApiResponse = { data: null, error: "Failed to fetch products.", status: 500 };
+    const body: ApiResponse = {
+      data: null,
+      error: "Failed to fetch products.",
+      status: 500,
+    };
     return Response.json(body, { status: 500 });
   }
 
   const total = count ?? 0;
-  const total_pages = Math.ceil(total / page_size);
 
   const result: PaginatedResponse<Product> = {
     data: (data ?? []).map((item) => ({
@@ -96,7 +100,10 @@ async function handler(req: Request): Promise<Response> {
 
   await setCache(cacheKey, result, 60);
 
-  log.info({ requestId, event: "products.list.success", total }, "Products fetched");
+  log.info(
+    { requestId, event: "products.list.success", total, tenantId },
+    "Products fetched",
+  );
 
   const body: ApiResponse<PaginatedResponse<Product>> = {
     data: result,

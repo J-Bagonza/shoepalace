@@ -22,20 +22,22 @@ function parsePriceRange(
 export async function fetchProducts(
   filters: ActiveFilters,
 ): Promise<PaginatedResponse<Product>> {
+  const tenantId = getTenantIdFromHeaders();
+
+  // Cache key MUST include tenantId to prevent cross-tenant cache leaks
   const cacheKey = productCacheKeys.list(
-    new URLSearchParams({
+    `${tenantId}:${new URLSearchParams({
       ...(filters.category && { category: filters.category }),
       sort: filters.sort,
       ...(filters.search && { search: filters.search }),
       ...(filters.price && { price: filters.price }),
       page: String(filters.page),
-    }).toString(),
+    }).toString()}`,
   );
 
   const cached = await getCache<PaginatedResponse<Product>>(cacheKey);
   if (cached) return cached;
 
-  const tenantId = getTenantIdFromHeaders();
   const supabase = createAdminSupabaseClient();
   await supabase.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
@@ -83,10 +85,24 @@ export async function fetchProducts(
   const total = count ?? 0;
   const result: PaginatedResponse<Product> = {
     data: (data ?? []).map((p) => ({
-      ...p,
-      images: p.product_images ?? [],
-      variants: p.product_variants ?? [],
-    })) as unknown as Product[],
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      description: p.description,
+      price: p.price,
+      category: p.category,
+      is_featured: p.is_featured,
+      model_url: p.model_url ?? null,
+      deleted_at: p.deleted_at ?? null,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
+      images: ((p.product_images as {
+        id: string; url: string; alt: string; position: number;
+      }[]) ?? []).sort((a, b) => a.position - b.position),
+      variants: (p.product_variants as {
+        id: string; size: string; color: string; stock: number;
+      }[]) ?? [],
+    })),
     total,
     page: filters.page,
     page_size: filters.page_size,

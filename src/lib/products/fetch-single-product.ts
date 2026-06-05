@@ -8,11 +8,13 @@ import type { Product } from "@/types/product";
 export async function fetchSingleProduct(
   slug: string,
 ): Promise<Product | null> {
-  const cacheKey = productCacheKeys.single(slug);
+  const tenantId = getTenantIdFromHeaders();
+
+  // Tenant-scoped cache key prevents cross-tenant cache leaks
+  const cacheKey = productCacheKeys.single(`${tenantId}:${slug}`);
   const cached = await getCache<Product>(cacheKey);
   if (cached) return cached;
 
-  const tenantId = getTenantIdFromHeaders();
   const supabase = createAdminSupabaseClient();
   await supabase.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
