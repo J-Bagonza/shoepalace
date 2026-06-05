@@ -92,8 +92,15 @@ function usePlatformAuth() {
   }, []);
 
   async function signOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    try {
+      // Call server route to clear httpOnly session cookie
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // Continue even if request fails
+    }
     setState("unauthenticated");
     setEmail("");
     window.location.href = "/";
