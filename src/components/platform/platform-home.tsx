@@ -19,68 +19,76 @@ function usePlatformAuth() {
   const [state, setState] = useState<PlatformAuthState>("loading");
   const [email, setEmail] = useState<string>("");
 
-  async function resolve() {
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        setState("unauthenticated");
-        setEmail("");
-        return;
-      }
-
-      setEmail(user.email ?? "");
-
-      const res = await fetch("/api/auth/platform-me", {
-        cache: "no-store",
-        headers: { "Cache-Control": "no-cache" },
-      });
-
-      if (!res.ok) {
-        setState("unauthenticated");
-        return;
-      }
-
-      const json = await res.json() as {
-        data: { role: string; email: string } | null;
-      };
-
-      if (!json.data) {
-        setState("unauthenticated");
-        return;
-      }
-
-      if (json.data.role === "platform_admin") {
-        setState("platform_admin");
-      } else {
-        setState("user");
-      }
-    } catch {
-      setState("unauthenticated");
-    }
-  }
-
   useEffect(() => {
-    // Initial check on mount
+    let cancelled = false;
+
+    async function resolve() {
+      try {
+        // Call platform-me directly — it reads the session from cookies
+        // server-side so it is always accurate regardless of client state
+        const res = await fetch("/api/auth/platform-me", {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Cache-Control": "no-cache, no-store",
+            "Pragma": "no-cache",
+          },
+        });
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setState("unauthenticated");
+          setEmail("");
+          return;
+        }
+
+        const json = await res.json() as {
+          data: { role: string; email: string } | null;
+        };
+
+        if (cancelled) return;
+
+        if (!json.data) {
+          setState("unauthenticated");
+          return;
+        }
+
+        setEmail(json.data.email);
+
+        if (json.data.role === "platform_admin") {
+          setState("platform_admin");
+        } else {
+          setState("user");
+        }
+      } catch {
+        if (!cancelled) setState("unauthenticated");
+      }
+    }
+
+    // Run immediately on mount
     void resolve();
 
+    // Also listen for auth changes
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
         if (event === "SIGNED_OUT") {
-          setState("unauthenticated");
-          setEmail("");
-        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-          // Only re-resolve on actual sign in — not INITIAL_SESSION
+          if (!cancelled) {
+            setState("unauthenticated");
+            setEmail("");
+          }
+        } else {
+          // Re-resolve on any other event
           void resolve();
         }
-        // INITIAL_SESSION is handled by the mount call above
       },
     );
 
-    return () => subscription.unsubscribe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function signOut() {
