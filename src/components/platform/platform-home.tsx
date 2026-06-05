@@ -32,7 +32,7 @@ function usePlatformAuth() {
       setEmail(user.email ?? "");
 
       try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        const res = await fetch("/api/auth/platform-me", { cache: "no-store" });
         if (res.ok) {
           const json = await res.json() as {
             data: { role: string } | null;
