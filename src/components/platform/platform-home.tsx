@@ -19,37 +19,50 @@ function usePlatformAuth() {
   const [state, setState] = useState<PlatformAuthState>("loading");
   const [email, setEmail] = useState<string>("");
 
-  useEffect(() => {
-    async function resolve() {
+  async function resolve() {
+    try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
         setState("unauthenticated");
+        setEmail("");
         return;
       }
 
       setEmail(user.email ?? "");
 
-      try {
-        const res = await fetch("/api/auth/platform-me", { cache: "no-store" });
-        if (res.ok) {
-          const json = await res.json() as {
-            data: { role: string } | null;
-          };
-          if (json.data?.role === "platform_admin") {
-            setState("platform_admin");
-          } else {
-            setState("user");
-          }
-        } else {
-          setState("unauthenticated");
-        }
-      } catch {
-        setState("unauthenticated");
-      }
-    }
+      const res = await fetch("/api/auth/platform-me", {
+        cache: "no-store",
+        headers: { "Cache-Control": "no-cache" },
+      });
 
+      if (!res.ok) {
+        setState("unauthenticated");
+        return;
+      }
+
+      const json = await res.json() as {
+        data: { role: string; email: string } | null;
+      };
+
+      if (!json.data) {
+        setState("unauthenticated");
+        return;
+      }
+
+      if (json.data.role === "platform_admin") {
+        setState("platform_admin");
+      } else {
+        setState("user");
+      }
+    } catch {
+      setState("unauthenticated");
+    }
+  }
+
+  useEffect(() => {
+    // Initial check on mount
     void resolve();
 
     const supabase = createClient();
@@ -58,21 +71,21 @@ function usePlatformAuth() {
         if (event === "SIGNED_OUT") {
           setState("unauthenticated");
           setEmail("");
-        } else if (
-          event === "SIGNED_IN" ||
-          event === "TOKEN_REFRESHED" ||
-          event === "INITIAL_SESSION"
-        ) {
+        } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          // Only re-resolve on actual sign in — not INITIAL_SESSION
           void resolve();
         }
+        // INITIAL_SESSION is handled by the mount call above
       },
     );
 
     return () => subscription.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function signOut() {
-    await fetch("/api/auth/signout", { method: "POST" });
+    const supabase = createClient();
+    await supabase.auth.signOut();
     setState("unauthenticated");
     setEmail("");
     window.location.href = "/";
