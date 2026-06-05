@@ -71,7 +71,7 @@ export function ImageGallery({ images, productName }: ImageGalleryProps) {
                 alt={img.alt || productName}
                 fill
                 sizes="80px"
-                className="object-cover"
+                className="object-contain"
               />
             </button>
           ))}
@@ -112,7 +112,7 @@ export function ImageGallery({ images, productName }: ImageGalleryProps) {
                 fill
                 priority
                 sizes="(max-width: 768px) 100vw, 55vw"
-                className="object-cover"
+                className="object-contain"
               />
             </motion.div>
           )}
