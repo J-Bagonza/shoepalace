@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { StockManager } from "@/components/admin/stock-manager";
+import { VariantManager } from "@/components/admin/variant-manager";
 import type { ProductVariant } from "@/types/product";
 
 interface PageProps {
@@ -14,7 +14,7 @@ interface RawProduct {
   product_variants: ProductVariant[];
 }
 
-async function getTenantId(): Promise<string> {
+async function getTenantData(): Promise<{ tenantId: string; currency: string }> {
   const supabase = createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -27,7 +27,17 @@ async function getTenantId(): Promise<string> {
     .single<{ tenant_id: string }>();
 
   if (!profile) redirect("/login");
-  return profile.tenant_id;
+
+  const { data: settings } = await admin
+    .from("tenant_settings")
+    .select("currency")
+    .eq("tenant_id", profile.tenant_id)
+    .single<{ currency: string }>();
+
+  return {
+    tenantId: profile.tenant_id,
+    currency: settings?.currency ?? "GBP",
+  };
 }
 
 async function getProduct(id: string, tenantId: string): Promise<RawProduct | null> {
@@ -46,7 +56,7 @@ async function getProduct(id: string, tenantId: string): Promise<RawProduct | nu
 }
 
 export default async function StockPage({ params }: PageProps) {
-  const tenantId = await getTenantId();
+  const { tenantId, currency } = await getTenantData();
   const product = await getProduct(params.id, tenantId);
   if (!product) notFound();
 
@@ -54,15 +64,16 @@ export default async function StockPage({ params }: PageProps) {
     <div className="flex flex-col gap-8 max-w-3xl">
       <div className="flex flex-col gap-1">
         <h1 className="font-bebas text-4xl tracking-wide text-neutral-900">
-          Manage Stock
+          Manage Variants
         </h1>
         <p className="text-sm text-neutral-400 truncate max-w-md">
           {product.name}
         </p>
       </div>
-      <StockManager
+      <VariantManager
         productId={product.id}
         variants={product.product_variants}
+        currency={currency}
       />
     </div>
   );

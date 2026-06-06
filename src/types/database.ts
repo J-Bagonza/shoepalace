@@ -7,6 +7,8 @@
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
@@ -15,7 +17,7 @@ export type Database = {
       audit_logs: {
         Row: {
           action: string
-          admin_id: string
+          admin_id: string | null
           created_at: string
           id: string
           metadata: Json
@@ -25,17 +27,17 @@ export type Database = {
         }
         Insert: {
           action: string
-          admin_id: string
+          admin_id?: string | null
           created_at?: string
           id?: string
           metadata?: Json
           target_id: string
           target_type: string
-          tenant_id: string
+          tenant_id?: string
         }
         Update: {
           action?: string
-          admin_id?: string
+          admin_id?: string | null
           created_at?: string
           id?: string
           metadata?: Json
@@ -65,30 +67,37 @@ export type Database = {
           created_at: string
           id: string
           quantity: number
+          tenant_id: string
           updated_at: string
           user_id: string
           variant_id: string
-          tenant_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           quantity?: number
+          tenant_id?: string
           updated_at?: string
           user_id: string
           variant_id: string
-          tenant_id: string
         }
         Update: {
           created_at?: string
           id?: string
           quantity?: number
+          tenant_id?: string
           updated_at?: string
           user_id?: string
           variant_id?: string
-          tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cart_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cart_items_user_id_fkey"
             columns: ["user_id"]
@@ -103,47 +112,47 @@ export type Database = {
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "cart_items_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
         ]
       }
       order_events: {
         Row: {
-          id: string
-          order_id: string
-          tenant_id: string
-          status: string
-          note: string | null
           actor_id: string | null
           actor_type: string
           created_at: string
+          id: string
+          note: string | null
+          order_id: string
+          status: string
+          tenant_id: string
         }
         Insert: {
-          id?: string
-          order_id: string
-          tenant_id: string
-          status: string
-          note?: string | null
           actor_id?: string | null
           actor_type?: string
           created_at?: string
+          id?: string
+          note?: string | null
+          order_id: string
+          status: string
+          tenant_id: string
         }
         Update: {
-          id?: string
-          order_id?: string
-          tenant_id?: string
-          status?: string
-          note?: string | null
           actor_id?: string | null
           actor_type?: string
           created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string
+          status?: string
+          tenant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "order_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_events_order_id_fkey"
             columns: ["order_id"]
@@ -151,53 +160,60 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       order_items: {
         Row: {
+          created_at: string
           id: string
+          image_url: string | null
           order_id: string
-          tenant_id: string
-          variant_id: string | null
           product_name: string
           product_slug: string
-          variant_size: string
-          variant_color: string
-          image_url: string | null
-          unit_price: number
           quantity: number
           subtotal: number
-          created_at: string
+          tenant_id: string
+          unit_price: number
+          variant_color: string
+          variant_id: string | null
+          variant_size: string
         }
         Insert: {
+          created_at?: string
           id?: string
+          image_url?: string | null
           order_id: string
-          tenant_id: string
-          variant_id?: string | null
           product_name: string
           product_slug: string
-          variant_size: string
-          variant_color: string
-          image_url?: string | null
-          unit_price: number
           quantity: number
           subtotal: number
-          created_at?: string
+          tenant_id: string
+          unit_price: number
+          variant_color: string
+          variant_id?: string | null
+          variant_size: string
         }
         Update: {
+          created_at?: string
           id?: string
+          image_url?: string | null
           order_id?: string
-          tenant_id?: string
-          variant_id?: string | null
           product_name?: string
           product_slug?: string
-          variant_size?: string
-          variant_color?: string
-          image_url?: string | null
-          unit_price?: number
           quantity?: number
           subtotal?: number
-          created_at?: string
+          tenant_id?: string
+          unit_price?: number
+          variant_color?: string
+          variant_id?: string | null
+          variant_size?: string
         }
         Relationships: [
           {
@@ -207,67 +223,88 @@ export type Database = {
             referencedRelation: "orders"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_items_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       orders: {
         Row: {
-          id: string
-          tenant_id: string
-          customer_id: string | null
+          created_at: string
           customer_email: string
+          customer_id: string | null
           customer_name: string
           customer_phone: string | null
-          status: string
-          total: number
-          subtotal: number
-          shipping_fee: number
-          payment_status: string
-          payment_reference: string | null
-          payment_method: string | null
-          shipping_address: string | null
+          id: string
           notes: string | null
-          created_at: string
+          payment_method: string | null
+          payment_reference: string | null
+          payment_status: string
+          shipping_address: string | null
+          shipping_fee: number
+          status: string
+          subtotal: number
+          tenant_id: string
+          total: number
           updated_at: string
         }
         Insert: {
-          id?: string
-          tenant_id: string
-          customer_id?: string | null
+          created_at?: string
           customer_email: string
+          customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
-          status?: string
-          total: number
-          subtotal: number
-          shipping_fee?: number
-          payment_status?: string
-          payment_reference?: string | null
-          payment_method?: string | null
-          shipping_address?: string | null
+          id?: string
           notes?: string | null
-          created_at?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
+          shipping_address?: string | null
+          shipping_fee?: number
+          status?: string
+          subtotal: number
+          tenant_id: string
+          total: number
           updated_at?: string
         }
         Update: {
-          id?: string
-          tenant_id?: string
-          customer_id?: string | null
+          created_at?: string
           customer_email?: string
+          customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
-          status?: string
-          total?: number
-          subtotal?: number
-          shipping_fee?: number
-          payment_status?: string
-          payment_reference?: string | null
-          payment_method?: string | null
-          shipping_address?: string | null
+          id?: string
           notes?: string | null
-          created_at?: string
+          payment_method?: string | null
+          payment_reference?: string | null
+          payment_status?: string
+          shipping_address?: string | null
+          shipping_fee?: number
+          status?: string
+          subtotal?: number
+          tenant_id?: string
+          total?: number
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -279,30 +316,30 @@ export type Database = {
       }
       pages: {
         Row: {
-          id: string
-          tenant_id: string
-          slug: string
-          title: string
           content: Json
           created_at: string
+          id: string
+          slug: string
+          tenant_id: string
+          title: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          tenant_id: string
-          slug: string
-          title: string
           content?: Json
           created_at?: string
+          id?: string
+          slug: string
+          tenant_id: string
+          title: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          tenant_id?: string
-          slug?: string
-          title?: string
           content?: Json
           created_at?: string
+          id?: string
+          slug?: string
+          tenant_id?: string
+          title?: string
           updated_at?: string
         }
         Relationships: [
@@ -322,8 +359,8 @@ export type Database = {
           id: string
           position: number
           product_id: string
-          url: string
           tenant_id: string
+          url: string
         }
         Insert: {
           alt?: string
@@ -331,8 +368,8 @@ export type Database = {
           id?: string
           position?: number
           product_id: string
+          tenant_id?: string
           url: string
-          tenant_id: string
         }
         Update: {
           alt?: string
@@ -340,8 +377,8 @@ export type Database = {
           id?: string
           position?: number
           product_id?: string
-          url?: string
           tenant_id?: string
+          url?: string
         }
         Relationships: [
           {
@@ -368,8 +405,8 @@ export type Database = {
           product_id: string
           size: string
           stock: number
-          updated_at: string
           tenant_id: string
+          updated_at: string
         }
         Insert: {
           color: string
@@ -378,8 +415,8 @@ export type Database = {
           product_id: string
           size: string
           stock?: number
+          tenant_id?: string
           updated_at?: string
-          tenant_id: string
         }
         Update: {
           color?: string
@@ -388,8 +425,8 @@ export type Database = {
           product_id?: string
           size?: string
           stock?: number
-          updated_at?: string
           tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -420,8 +457,8 @@ export type Database = {
           name: string
           price: number
           slug: string
-          updated_at: string
           tenant_id: string
+          updated_at: string
         }
         Insert: {
           category: string
@@ -434,8 +471,8 @@ export type Database = {
           name: string
           price: number
           slug: string
+          tenant_id?: string
           updated_at?: string
-          tenant_id: string
         }
         Update: {
           category?: string
@@ -448,8 +485,8 @@ export type Database = {
           name?: string
           price?: number
           slug?: string
-          updated_at?: string
           tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -463,39 +500,53 @@ export type Database = {
       }
       stock_movements: {
         Row: {
-          id: string
-          tenant_id: string
-          variant_id: string
-          order_id: string | null
-          delta: number
-          reason: "restock" | "sale" | "manual_increase" | "manual_decrease" | "return" | "damaged" | "initial"
-          note: string | null
           actor_id: string | null
           created_at: string
-        }
-        Insert: {
-          id?: string
+          delta: number
+          id: string
+          note: string | null
+          order_id: string | null
+          reason: string
           tenant_id: string
           variant_id: string
-          order_id?: string | null
-          delta: number
-          reason: "restock" | "sale" | "manual_increase" | "manual_decrease" | "return" | "damaged" | "initial"
-          note?: string | null
+        }
+        Insert: {
           actor_id?: string | null
           created_at?: string
+          delta: number
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          reason: string
+          tenant_id: string
+          variant_id: string
         }
         Update: {
-          id?: string
-          tenant_id?: string
-          variant_id?: string
-          order_id?: string | null
-          delta?: number
-          reason?: "restock" | "sale" | "manual_increase" | "manual_decrease" | "return" | "damaged" | "initial"
-          note?: string | null
           actor_id?: string | null
           created_at?: string
+          delta?: number
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          reason?: string
+          tenant_id?: string
+          variant_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "stock_movements_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "stock_movements_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -510,16 +561,85 @@ export type Database = {
             referencedRelation: "product_variants"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      tenant_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          slug: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          slug: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          slug?: string
+          tenant_id?: string
+        }
+        Relationships: [
           {
-            foreignKeyName: "stock_movements_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: "tenant_categories_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "orders"
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_invite_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          tenant_id: string
+          token: string
+          used: boolean
+          used_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          tenant_id: string
+          token?: string
+          used?: boolean
+          used_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          tenant_id?: string
+          token?: string
+          used?: boolean
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_invite_tokens_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "stock_movements_actor_id_fkey"
-            columns: ["actor_id"]
+            foreignKeyName: "tenant_invite_tokens_used_by_fkey"
+            columns: ["used_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -528,36 +648,36 @@ export type Database = {
       }
       tenant_onboarding: {
         Row: {
-          id: string
-          tenant_id: string
-          step_identity: boolean
-          step_contact: boolean
-          step_first_product: boolean
-          step_payment: boolean
           completed_at: string | null
           created_at: string
+          id: string
+          step_contact: boolean
+          step_first_product: boolean
+          step_identity: boolean
+          step_payment: boolean
+          tenant_id: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          tenant_id: string
-          step_identity?: boolean
-          step_contact?: boolean
-          step_first_product?: boolean
-          step_payment?: boolean
           completed_at?: string | null
           created_at?: string
+          id?: string
+          step_contact?: boolean
+          step_first_product?: boolean
+          step_identity?: boolean
+          step_payment?: boolean
+          tenant_id: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          tenant_id?: string
-          step_identity?: boolean
-          step_contact?: boolean
-          step_first_product?: boolean
-          step_payment?: boolean
           completed_at?: string | null
           created_at?: string
+          id?: string
+          step_contact?: boolean
+          step_first_product?: boolean
+          step_identity?: boolean
+          step_payment?: boolean
+          tenant_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -572,30 +692,30 @@ export type Database = {
       }
       tenant_payment_settings: {
         Row: {
+          created_at: string
           id: string
-          tenant_id: string
+          is_active: boolean
           payhero_api_key_encrypted: string | null
           payhero_channel_id: string | null
-          is_active: boolean
-          created_at: string
+          tenant_id: string
           updated_at: string
         }
         Insert: {
+          created_at?: string
           id?: string
-          tenant_id: string
+          is_active?: boolean
           payhero_api_key_encrypted?: string | null
           payhero_channel_id?: string | null
-          is_active?: boolean
-          created_at?: string
+          tenant_id: string
           updated_at?: string
         }
         Update: {
+          created_at?: string
           id?: string
-          tenant_id?: string
+          is_active?: boolean
           payhero_api_key_encrypted?: string | null
           payhero_channel_id?: string | null
-          is_active?: boolean
-          created_at?: string
+          tenant_id?: string
           updated_at?: string
         }
         Relationships: [
@@ -610,94 +730,105 @@ export type Database = {
       }
       tenant_requests: {
         Row: {
+          created_at: string
+          description: string | null
           id: string
-          store_name: string
-          slug: string
           owner_email: string
           owner_name: string
           phone: string | null
-          description: string | null
-          status: string
           rejection_note: string | null
-          reviewed_by: string | null
           reviewed_at: string | null
-          created_at: string
+          reviewed_by: string | null
+          slug: string
+          status: string
+          store_name: string
           updated_at: string
         }
         Insert: {
+          created_at?: string
+          description?: string | null
           id?: string
-          store_name: string
-          slug: string
           owner_email: string
           owner_name: string
           phone?: string | null
-          description?: string | null
-          status?: string
           rejection_note?: string | null
-          reviewed_by?: string | null
           reviewed_at?: string | null
-          created_at?: string
+          reviewed_by?: string | null
+          slug: string
+          status?: string
+          store_name: string
           updated_at?: string
         }
         Update: {
+          created_at?: string
+          description?: string | null
           id?: string
-          store_name?: string
-          slug?: string
           owner_email?: string
           owner_name?: string
           phone?: string | null
-          description?: string | null
-          status?: string
           rejection_note?: string | null
-          reviewed_by?: string | null
           reviewed_at?: string | null
-          created_at?: string
+          reviewed_by?: string | null
+          slug?: string
+          status?: string
+          store_name?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenant_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tenant_settings: {
         Row: {
-          id: string
-          tenant_id: string
-          tagline: string | null
+          contact_address: string | null
           contact_email: string | null
           contact_phone: string | null
-          contact_address: string | null
-          instagram_url: string | null
-          whatsapp_number: string | null
-          shipping_info: string | null
-          returns_info: string | null
           created_at: string
+          currency: string
+          id: string
+          instagram_url: string | null
+          returns_info: string | null
+          shipping_info: string | null
+          tagline: string | null
+          tenant_id: string
           updated_at: string
+          whatsapp_number: string | null
         }
         Insert: {
-          id?: string
-          tenant_id: string
-          tagline?: string | null
+          contact_address?: string | null
           contact_email?: string | null
           contact_phone?: string | null
-          contact_address?: string | null
-          instagram_url?: string | null
-          whatsapp_number?: string | null
-          shipping_info?: string | null
-          returns_info?: string | null
           created_at?: string
+          currency?: string
+          id?: string
+          instagram_url?: string | null
+          returns_info?: string | null
+          shipping_info?: string | null
+          tagline?: string | null
+          tenant_id: string
           updated_at?: string
+          whatsapp_number?: string | null
         }
         Update: {
-          id?: string
-          tenant_id?: string
-          tagline?: string | null
+          contact_address?: string | null
           contact_email?: string | null
           contact_phone?: string | null
-          contact_address?: string | null
-          instagram_url?: string | null
-          whatsapp_number?: string | null
-          shipping_info?: string | null
-          returns_info?: string | null
           created_at?: string
+          currency?: string
+          id?: string
+          instagram_url?: string | null
+          returns_info?: string | null
+          shipping_info?: string | null
+          tagline?: string | null
+          tenant_id?: string
           updated_at?: string
+          whatsapp_number?: string | null
         }
         Relationships: [
           {
@@ -709,76 +840,35 @@ export type Database = {
           },
         ]
       }
-      tenant_invite_tokens: {
-        Row: {
-          id: string
-          tenant_id: string
-          email: string
-          token: string
-          used: boolean
-          used_by: string | null
-          expires_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          tenant_id: string
-          email: string
-          token?: string
-          used?: boolean
-          used_by?: string | null
-          expires_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          tenant_id?: string
-          email?: string
-          token?: string
-          used?: boolean
-          used_by?: string | null
-          expires_at?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tenant_invite_tokens_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       tenants: {
         Row: {
-          id: string
-          name: string
-          slug: string
-          logo_url: string | null
-          is_active: boolean
-          onboarding_complete: boolean
           created_at: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          onboarding_complete: boolean
+          slug: string
           updated_at: string
         }
         Insert: {
-          id?: string
-          name: string
-          slug: string
-          logo_url?: string | null
-          is_active?: boolean
-          onboarding_complete?: boolean
           created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          onboarding_complete?: boolean
+          slug: string
           updated_at?: string
         }
         Update: {
-          id?: string
-          name?: string
-          slug?: string
-          logo_url?: string | null
-          is_active?: boolean
-          onboarding_complete?: boolean
           created_at?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          onboarding_complete?: boolean
+          slug?: string
           updated_at?: string
         }
         Relationships: []
@@ -789,24 +879,24 @@ export type Database = {
           email: string
           id: string
           role: string
-          updated_at: string
           tenant_id: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
           email: string
           id: string
           role?: string
+          tenant_id?: string
           updated_at?: string
-          tenant_id: string
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
           role?: string
-          updated_at?: string
           tenant_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -822,19 +912,12 @@ export type Database = {
     Views: {
       current_stock: {
         Row: {
-          variant_id: string
-          tenant_id: string
-          stock: number
           last_movement_at: string | null
+          stock: number | null
+          tenant_id: string | null
+          variant_id: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "stock_movements_variant_id_fkey"
-            columns: ["variant_id"]
-            isOneToOne: false
-            referencedRelation: "product_variants"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "stock_movements_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -842,61 +925,45 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Functions: {
-      check_and_reserve_stock: {
-        Args: {
-          p_variant_id: string
-          p_tenant_id: string
-          p_quantity: number
-          p_order_id: string
-        }
-        Returns: boolean
-      }
       approve_tenant_request: {
         Args: { p_request_id: string; p_reviewer_id: string }
         Returns: string
       }
+      check_and_reserve_stock: {
+        Args: {
+          p_order_id: string
+          p_quantity: number
+          p_tenant_id: string
+          p_variant_id: string
+        }
+        Returns: boolean
+      }
+      get_tenant_id: { Args: never; Returns: string }
+      get_user_role: { Args: never; Returns: string }
       reject_tenant_request: {
         Args: {
+          p_rejection_note?: string
           p_request_id: string
           p_reviewer_id: string
-          p_rejection_note?: string
         }
         Returns: undefined
       }
       release_reserved_stock: {
-        Args: {
-          p_order_id: string
-          p_tenant_id: string
-        }
+        Args: { p_order_id: string; p_tenant_id: string }
         Returns: undefined
       }
-      get_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_tenant_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      insert_product_image: {
-        Args: {
-          p_product_id: string
-          p_url: string
-          p_alt: string
-          p_position: number
-        }
-        Returns: undefined
-      }
-      set_tenant_context: {
-        Args: {
-          p_tenant_id: string
-        }
-        Returns: undefined
-      }
+      set_tenant_context: { Args: { p_tenant_id: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
