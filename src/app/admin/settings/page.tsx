@@ -1,22 +1,47 @@
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth/session";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { fetchTenantSettings } from "@/lib/tenant/fetch-settings";
 import { fetchAllPages } from "@/lib/pages/fetch-page";
-import { getTenantFromHeaders } from "@/lib/tenant/server-tenant";
 import { SettingsTabs } from "@/components/admin/settings-tabs";
+import type { Tenant } from "@/types/tenant";
 
-export default async function AdminSettingsPage() {
-  const [user, tenant] = await Promise.all([
-    getAuthenticatedUser(),
-    getTenantFromHeaders(),
-  ]);
+async function getSessionTenant(): Promise<{
+  tenant: Tenant;
+  tenantId: string;
+}> {
+  const supabase = createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  if (!user || user.role !== "admin") redirect("/login");
+  const admin = createAdminSupabaseClient();
+  const { data: profile } = await admin
+    .from("users")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single<{ tenant_id: string; role: string }>();
+
+  if (!profile || !["admin", "platform_admin"].includes(profile.role)) {
+    redirect("/login");
+  }
+
+  const { data: tenant } = await admin
+    .from("tenants")
+    .select("id, name, slug, logo_url, is_active, onboarding_complete, created_at, updated_at")
+    .eq("id", profile.tenant_id)
+    .single<Tenant>();
+
   if (!tenant) redirect("/login");
 
+  return { tenant, tenantId: profile.tenant_id };
+}
+
+export default async function AdminSettingsPage() {
+  const { tenant, tenantId } = await getSessionTenant();
+
   const [settings, pages] = await Promise.all([
-    fetchTenantSettings(tenant.id),
-    fetchAllPages(tenant.id),
+    fetchTenantSettings(tenantId),
+    fetchAllPages(tenantId),
   ]);
 
   return (

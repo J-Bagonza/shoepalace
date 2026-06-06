@@ -6,6 +6,7 @@ import { clsx } from "clsx";
 import { StoreIdentityForm } from "./store-identity-form";
 import { ContactSettingsForm } from "./contact-settings-form";
 import { PageEditor } from "./page-editor";
+import { CategoriesForm } from "./categories-form";
 import { PaymentSettingsForm } from "./payment-settings-form";
 import { EmailSettingsPanel } from "./email-settings-panel";
 import type { Tenant, TenantSettings } from "@/types/tenant";
@@ -20,6 +21,7 @@ interface SettingsTabsProps {
 const TABS = [
   { id: "identity", label: "Store Identity" },
   { id: "contact", label: "Contact & Info" },
+  { id: "categories", label: "Categories" },
   { id: "pages", label: "Content Pages" },
   { id: "payment", label: "Payment" },
   { id: "email", label: "Email" },
@@ -75,6 +77,9 @@ export function SettingsTabs({
         )}
         {activeTab === "payment" && (
           <PaymentSettingsForm />
+        )}
+        {activeTab === "categories" && (
+          <CategoriesForm />
         )}
         {activeTab === "email" && (
           <EmailSettingsPanel />

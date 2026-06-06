@@ -23,6 +23,7 @@ export function ContactSettingsForm({ settings }: ContactSettingsFormProps) {
     whatsapp_number: settings?.whatsapp_number ?? "",
     shipping_info: settings?.shipping_info ?? "",
     returns_info: settings?.returns_info ?? "",
+    currency: (settings as { currency?: string } | null)?.currency ?? "GBP",
   });
 
   const [loading, setLoading] = useState(false);
@@ -71,6 +72,27 @@ export function ContactSettingsForm({ settings }: ContactSettingsFormProps) {
         onChange={(e) => set("tagline", e.target.value)}
         placeholder="Precision-crafted footwear..."
       />
+
+      {/* Currency */}
+      <div className="flex flex-col gap-1.5">
+        <label className="text-xs font-medium uppercase tracking-widest text-neutral-500">
+          Store Currency
+        </label>
+        <select
+          value={values.currency}
+          onChange={(e) => set("currency", e.target.value)}
+          className="w-full border border-neutral-300 bg-white px-4 py-3 text-sm
+            text-neutral-900 focus:border-neutral-900 focus:outline-none
+            appearance-none transition-colors"
+        >
+          <option value="GBP">GBP — British Pound (£)</option>
+          <option value="KES">KES — Kenyan Shilling (KSh)</option>
+          <option value="USD">USD — US Dollar ($)</option>
+        </select>
+        <p className="text-[10px] text-neutral-400 uppercase tracking-widest">
+          Applies to all product prices in your store.
+        </p>
+      </div>
 
       <div className="h-px bg-neutral-100" />
 
