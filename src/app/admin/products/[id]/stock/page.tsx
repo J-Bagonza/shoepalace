@@ -1,6 +1,6 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { StockManager } from "@/components/admin/stock-manager";
 import type { ProductVariant } from "@/types/product";
 
@@ -14,13 +14,26 @@ interface RawProduct {
   product_variants: ProductVariant[];
 }
 
-async function getProduct(id: string): Promise<RawProduct | null> {
+async function getTenantId(): Promise<string> {
+  const supabase = createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const admin = createAdminSupabaseClient();
+  const { data: profile } = await admin
+    .from("users")
+    .select("tenant_id")
+    .eq("id", user.id)
+    .single<{ tenant_id: string }>();
+
+  if (!profile) redirect("/login");
+  return profile.tenant_id;
+}
+
+async function getProduct(id: string, tenantId: string): Promise<RawProduct | null> {
   if (!/^[0-9a-f-]{36}$/.test(id)) return null;
 
-  const tenantId = getTenantIdFromHeaders();
   const admin = createAdminSupabaseClient();
-  await admin.rpc("set_tenant_context", { p_tenant_id: tenantId });
-
   const { data, error } = await admin
     .from("products")
     .select("id, name, product_variants(id, size, color, stock)")
@@ -33,7 +46,8 @@ async function getProduct(id: string): Promise<RawProduct | null> {
 }
 
 export default async function StockPage({ params }: PageProps) {
-  const product = await getProduct(params.id);
+  const tenantId = await getTenantId();
+  const product = await getProduct(params.id, tenantId);
   if (!product) notFound();
 
   return (

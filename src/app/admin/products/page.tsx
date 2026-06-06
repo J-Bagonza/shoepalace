@@ -1,13 +1,33 @@
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { AdminProductTable } from "@/components/admin/product-table";
+import { redirect } from "next/navigation";
 import type { Product } from "@/types/product";
 
 interface PageProps {
   searchParams: Record<string, string | undefined>;
 }
 
-async function getProducts(showDeleted: boolean): Promise<Product[]> {
+async function getTenantId(): Promise<string> {
+  const supabase = createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const admin = createAdminSupabaseClient();
+  const { data: profile } = await admin
+    .from("users")
+    .select("tenant_id, role")
+    .eq("id", user.id)
+    .single<{ tenant_id: string; role: string }>();
+
+  if (!profile) redirect("/login");
+
+  return profile.tenant_id;
+}
+
+async function getProducts(tenantId: string, showDeleted: boolean): Promise<Product[]> {
   const admin = createAdminSupabaseClient();
 
   let query = admin
@@ -18,6 +38,7 @@ async function getProducts(showDeleted: boolean): Promise<Product[]> {
       product_images ( id, url, alt, position ),
       product_variants ( id, size, color, stock )
     `)
+    .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
   if (!showDeleted) {
@@ -30,12 +51,12 @@ async function getProducts(showDeleted: boolean): Promise<Product[]> {
 }
 
 export default async function AdminProductsPage({ searchParams }: PageProps) {
+  const tenantId = await getTenantId();
   const showDeleted = searchParams["show_deleted"] === "true";
-  const products = await getProducts(showDeleted);
+  const products = await getProducts(tenantId, showDeleted);
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <h1 className="font-bebas text-4xl tracking-wide text-neutral-900">
@@ -55,7 +76,6 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      {/* Toggle */}
       <div className="flex items-center gap-3">
         <Link
           href="/admin/products"

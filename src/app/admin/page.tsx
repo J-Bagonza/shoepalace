@@ -1,21 +1,34 @@
 import Link from "next/link";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-async function getStats() {
+async function getTenantId(): Promise<string> {
+  const supabase = createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const admin = createAdminSupabaseClient();
+  const { data: profile } = await admin
+    .from("users")
+    .select("tenant_id")
+    .eq("id", user.id)
+    .single<{ tenant_id: string }>();
+
+  if (!profile) redirect("/login");
+  return profile.tenant_id;
+}
+
+async function getStats(tenantId: string) {
   const admin = createAdminSupabaseClient();
 
   const [products, deletedProducts, auditLogs] = await Promise.all([
-    admin
-      .from("products")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null),
-    admin
-      .from("products")
-      .select("id", { count: "exact", head: true })
-      .not("deleted_at", "is", null),
-    admin
-      .from("audit_logs")
-      .select("id", { count: "exact", head: true }),
+    admin.from("products").select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId).is("deleted_at", null),
+    admin.from("products").select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId).not("deleted_at", "is", null),
+    admin.from("audit_logs").select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId),
   ]);
 
   return {
@@ -26,24 +39,13 @@ async function getStats() {
 }
 
 export default async function AdminDashboard() {
-  const stats = await getStats();
+  const tenantId = await getTenantId();
+  const stats = await getStats(tenantId);
 
   const STATS = [
-    {
-      label: "Active Products",
-      value: stats.activeProducts,
-      href: "/admin/products",
-    },
-    {
-      label: "Archived Products",
-      value: stats.deletedProducts,
-      href: "/admin/products?show_deleted=true",
-    },
-    {
-      label: "Audit Events",
-      value: stats.auditEvents,
-      href: "/admin/logs",
-    },
+    { label: "Active Products", value: stats.activeProducts, href: "/admin/products" },
+    { label: "Archived Products", value: stats.deletedProducts, href: "/admin/products?show_deleted=true" },
+    { label: "Audit Events", value: stats.auditEvents, href: "/admin/logs" },
   ];
 
   const ACTIONS = [
@@ -59,11 +61,10 @@ export default async function AdminDashboard() {
           Dashboard
         </h1>
         <p className="text-sm text-neutral-400">
-          Manage your ShoePalace storefront.
+          Manage your storefront.
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {STATS.map((stat) => (
           <Link
@@ -75,15 +76,13 @@ export default async function AdminDashboard() {
             <span className="font-bebas text-4xl text-neutral-900">
               {stat.value}
             </span>
-            <span className="text-xs uppercase tracking-widest
-              text-neutral-400">
+            <span className="text-xs uppercase tracking-widest text-neutral-400">
               {stat.label}
             </span>
           </Link>
         ))}
       </div>
 
-      {/* Quick actions */}
       <div className="flex flex-col gap-3">
         <h2 className="text-xs uppercase tracking-widest text-neutral-400">
           Quick Actions

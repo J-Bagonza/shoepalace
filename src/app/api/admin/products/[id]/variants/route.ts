@@ -7,20 +7,80 @@ import { z } from "zod";
 import { createRequestLogger } from "@/lib/logger/request-logger";
 import type { ApiResponse } from "@/types/api";
 
-const updateVariantsSchema = z.object({
-  variants: z.array(
-    z.object({
-      id: z.string().uuid(),
-      stock: z.number().int().min(0).max(99999),
-    }),
-  ).min(1).max(100),
+const variantSchema = z.object({
+  size: z.string().min(1).max(20),
+  color: z.string().min(1).max(50),
+  stock: z.number().int().min(0).max(99999),
+});
+
+const createVariantsSchema = z.object({
+  variants: z.array(variantSchema).min(1).max(50),
+});
+
+const updateVariantSchema = z.object({
+  variantId: z.string().uuid(),
+  size: z.string().min(1).max(20).optional(),
+  color: z.string().min(1).max(50).optional(),
+  stock: z.number().int().min(0).max(99999).optional(),
+});
+
+const deleteVariantSchema = z.object({
+  variantId: z.string().uuid(),
 });
 
 function getParams(context?: Record<string, unknown>) {
   return context?.["params"] as Record<string, string> | undefined;
 }
 
-async function handler(
+// GET — list variants for a product
+async function getHandler(
+  req: Request,
+  context?: Record<string, unknown>,
+): Promise<Response> {
+  const auth = await requireAuth(req, "admin");
+  if (auth instanceof Response) return auth;
+
+  const paramValidation = validateParams(getParams(context), productIdParamsSchema);
+  if (!paramValidation.success) return paramValidation.response;
+
+  const { id: productId } = paramValidation.data;
+  const admin = createAdminSupabaseClient();
+
+  // Verify product belongs to tenant
+  const { data: product } = await admin
+    .from("products")
+    .select("id")
+    .eq("id", productId)
+    .eq("tenant_id", auth.tenantId)
+    .single<{ id: string }>();
+
+  if (!product) {
+    return Response.json(
+      { data: null, error: "Product not found.", status: 404 },
+      { status: 404 },
+    );
+  }
+
+  const { data, error } = await admin
+    .from("product_variants")
+    .select("id, size, color, stock, created_at")
+    .eq("product_id", productId)
+    .eq("tenant_id", auth.tenantId)
+    .order("size")
+    .order("color");
+
+  if (error) {
+    return Response.json(
+      { data: null, error: "Failed to fetch variants.", status: 500 },
+      { status: 500 },
+    );
+  }
+
+  return Response.json({ data, error: null, status: 200 }, { status: 200 });
+}
+
+// POST — create new variants
+async function postHandler(
   req: Request,
   context?: Record<string, unknown>,
 ): Promise<Response> {
@@ -29,76 +89,179 @@ async function handler(
   const auth = await requireAuth(req, "admin");
   if (auth instanceof Response) return auth;
 
-  const paramValidation = validateParams(
-    getParams(context),
-    productIdParamsSchema,
-  );
+  const paramValidation = validateParams(getParams(context), productIdParamsSchema);
   if (!paramValidation.success) return paramValidation.response;
 
   const { id: productId } = paramValidation.data;
 
-  const bodyValidation = await validateBody(req, updateVariantsSchema);
+  const bodyValidation = await validateBody(req, createVariantsSchema);
   if (!bodyValidation.success) return bodyValidation.response;
 
-  const { variants } = bodyValidation.data;
   const admin = createAdminSupabaseClient();
 
-  // Verify all variants belong to this product — IDOR prevention
+  // Verify product belongs to tenant
+  const { data: product } = await admin
+    .from("products")
+    .select("id")
+    .eq("id", productId)
+    .eq("tenant_id", auth.tenantId)
+    .single<{ id: string }>();
+
+  if (!product) {
+    return Response.json(
+      { data: null, error: "Product not found.", status: 404 },
+      { status: 404 },
+    );
+  }
+
+  const rows = bodyValidation.data.variants.map((v) => ({
+    product_id: productId,
+    tenant_id: auth.tenantId,
+    size: v.size,
+    color: v.color,
+    stock: v.stock,
+  }));
+
+  const { data, error } = await admin
+    .from("product_variants")
+    .insert(rows)
+    .select("id, size, color, stock");
+
+  if (error) {
+    log.error({ requestId }, error.message);
+    return Response.json(
+      { data: null, error: "Failed to create variants.", status: 500 },
+      { status: 500 },
+    );
+  }
+
+  return Response.json({ data, error: null, status: 201 }, { status: 201 });
+}
+
+// PATCH — update a single variant
+async function patchHandler(
+  req: Request,
+  context?: Record<string, unknown>,
+): Promise<Response> {
+  const { log, requestId } = createRequestLogger(req);
+
+  const auth = await requireAuth(req, "admin");
+  if (auth instanceof Response) return auth;
+
+  const paramValidation = validateParams(getParams(context), productIdParamsSchema);
+  if (!paramValidation.success) return paramValidation.response;
+
+  const { id: productId } = paramValidation.data;
+
+  const bodyValidation = await validateBody(req, updateVariantSchema);
+  if (!bodyValidation.success) return bodyValidation.response;
+
+  const { variantId, ...updates } = bodyValidation.data;
+
+  if (Object.keys(updates).length === 0) {
+    return Response.json(
+      { data: null, error: "No fields to update.", status: 400 },
+      { status: 400 },
+    );
+  }
+
+  const admin = createAdminSupabaseClient();
+
+  // Verify variant belongs to this product and tenant — IDOR prevention
   const { data: existing } = await admin
     .from("product_variants")
     .select("id")
+    .eq("id", variantId)
     .eq("product_id", productId)
-    .in("id", variants.map((v) => v.id));
+    .eq("tenant_id", auth.tenantId)
+    .single<{ id: string }>();
 
-  const validIds = new Set((existing ?? []).map((v: { id: string }) => v.id));
-  const allValid = variants.every((v) => validIds.has(v.id));
-
-  if (!allValid) {
-    const body: ApiResponse = {
-      data: null,
-      error: "One or more variants do not belong to this product.",
-      status: 403,
-    };
-    return Response.json(body, { status: 403 });
-  }
-
-  // Update each variant stock
-  const errors: string[] = [];
-  for (const variant of variants) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (admin as any)
-      .from("product_variants")
-      .update({ stock: variant.stock })
-      .eq("id", variant.id)
-      .eq("product_id", productId);
-
-    if (error) errors.push(variant.id);
-  }
-
-  if (errors.length > 0) {
-    log.error(
-      { requestId, event: "admin.variants.update.error", errors },
-      "Some variants failed to update",
+  if (!existing) {
+    return Response.json(
+      { data: null, error: "Variant not found.", status: 404 },
+      { status: 404 },
     );
-    const body: ApiResponse = {
-      data: null,
-      error: "Some variants failed to update.",
-      status: 500,
-    };
-    return Response.json(body, { status: 500 });
   }
 
-  log.info(
-    { requestId, event: "admin.variants.update.success", productId },
-    "Variants updated",
-  );
+  const { data, error } = await admin
+    .from("product_variants")
+    .update(updates)
+    .eq("id", variantId)
+    .eq("product_id", productId)
+    .eq("tenant_id", auth.tenantId)
+    .select("id, size, color, stock")
+    .single();
 
-  const body: ApiResponse<{ message: string }> = {
-    data: { message: "Stock updated successfully." },
-    error: null,
-    status: 200,
-  };
-  return Response.json(body, { status: 200 });
+  if (error) {
+    log.error({ requestId }, error.message);
+    return Response.json(
+      { data: null, error: "Failed to update variant.", status: 500 },
+      { status: 500 },
+    );
+  }
+
+  return Response.json({ data, error: null, status: 200 }, { status: 200 });
 }
 
-export const PATCH = withRateLimit("api", handler);
+// DELETE — remove a variant
+async function deleteHandler(
+  req: Request,
+  context?: Record<string, unknown>,
+): Promise<Response> {
+  const { log, requestId } = createRequestLogger(req);
+
+  const auth = await requireAuth(req, "admin");
+  if (auth instanceof Response) return auth;
+
+  const paramValidation = validateParams(getParams(context), productIdParamsSchema);
+  if (!paramValidation.success) return paramValidation.response;
+
+  const { id: productId } = paramValidation.data;
+
+  const bodyValidation = await validateBody(req, deleteVariantSchema);
+  if (!bodyValidation.success) return bodyValidation.response;
+
+  const { variantId } = bodyValidation.data;
+  const admin = createAdminSupabaseClient();
+
+  // Verify ownership — IDOR prevention
+  const { data: existing } = await admin
+    .from("product_variants")
+    .select("id, stock")
+    .eq("id", variantId)
+    .eq("product_id", productId)
+    .eq("tenant_id", auth.tenantId)
+    .single<{ id: string; stock: number }>();
+
+  if (!existing) {
+    return Response.json(
+      { data: null, error: "Variant not found.", status: 404 },
+      { status: 404 },
+    );
+  }
+
+  const { error } = await admin
+    .from("product_variants")
+    .delete()
+    .eq("id", variantId)
+    .eq("product_id", productId)
+    .eq("tenant_id", auth.tenantId);
+
+  if (error) {
+    log.error({ requestId }, error.message);
+    return Response.json(
+      { data: null, error: "Failed to delete variant.", status: 500 },
+      { status: 500 },
+    );
+  }
+
+  return Response.json(
+    { data: { message: "Variant deleted." }, error: null, status: 200 },
+    { status: 200 },
+  );
+}
+
+export const GET = withRateLimit("api", getHandler);
+export const POST = withRateLimit("api", postHandler);
+export const PATCH = withRateLimit("api", patchHandler);
+export const DELETE = withRateLimit("api", deleteHandler);
