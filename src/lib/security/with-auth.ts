@@ -1,20 +1,13 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import type { ApiResponse } from "@/types/api";
 import type { UserRole } from "@/types/user";
 
-/**
- * Verifies session and optionally enforces role.
- * SECURITY: Role always read from DB — never trusted from JWT.
- * SECURITY: Role lookup is tenant-scoped.
- */
 export async function requireAuth(
   req: Request,
   requiredRole?: UserRole,
 ): Promise<{ userId: string; role: UserRole; tenantId: string } | Response> {
   const supabase = createServerSupabaseClient();
-  const tenantId = getTenantIdFromHeaders();
 
   const {
     data: { user },
@@ -27,24 +20,21 @@ export async function requireAuth(
 
   const admin = createAdminSupabaseClient();
 
-  // Set tenant context before role lookup
-  await admin.rpc("set_tenant_context", { p_tenant_id: tenantId });
-
+  // SECURITY: fetch role AND tenant_id from DB — never trust headers or JWT
   const { data: profile, error: profileError } = await admin
     .from("users")
-    .select("role")
+    .select("role, tenant_id")
     .eq("id", user.id)
-    .eq("tenant_id", tenantId)
-    .single<{ role: UserRole }>();
+    .single<{ role: UserRole; tenant_id: string }>();
 
   if (profileError || !profile) {
     return unauthorizedResponse();
   }
 
   const role = profile.role;
+  const tenantId = profile.tenant_id;
 
   if (requiredRole) {
-    // platform_admin can access everything admin can
     const allowed =
       role === requiredRole ||
       (requiredRole === "admin" && role === "platform_admin");

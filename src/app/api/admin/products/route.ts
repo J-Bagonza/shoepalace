@@ -1,5 +1,4 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
-import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import { validateBody, validateQuery } from "@/lib/validations/request";
 import {
   createProductSchema,
@@ -26,9 +25,9 @@ async function listHandler(req: Request) {
 
   const { page, page_size, category, sort, search } = validation.data;
 
-  const tenantId = getTenantIdFromHeaders();
+  // Always use auth.tenantId — never rely on headers fallback
+  const tenantId = auth.tenantId;
   const admin = createAdminSupabaseClient();
-  await admin.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
   const from = (page - 1) * page_size;
   const to = from + page_size - 1;
@@ -37,6 +36,7 @@ async function listHandler(req: Request) {
     .from("products")
     .select(PRODUCT_SELECT, { count: "exact" })
     .eq("tenant_id", tenantId)
+    .is("deleted_at", null)
     .range(from, to);
 
   if (category) query = query.eq("category", category);
@@ -78,7 +78,6 @@ async function createHandler(req: Request) {
   const auth = await requireAuth(req, "admin");
   if (auth instanceof Response) return auth;
 
-  // Guard: tenant_id must be a valid UUID
   if (!auth.tenantId || !/^[0-9a-f-]{36}$/.test(auth.tenantId)) {
     log.error(
       { requestId, event: "admin.products.create.no_tenant" },
@@ -99,15 +98,22 @@ async function createHandler(req: Request) {
 
   const tenantId = auth.tenantId;
   const admin = createAdminSupabaseClient();
-  await admin.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
-  // Check slug uniqueness within this tenant only
-  const { data: existing } = await admin
+  // maybeSingle — returns null data (not error) when no row found
+  const { data: existing, error: slugError } = await admin
     .from("products")
     .select("id")
     .eq("slug", validation.data.slug)
     .eq("tenant_id", tenantId)
-    .single<{ id: string }>();
+    .maybeSingle<{ id: string }>();
+
+  if (slugError) {
+    log.error({ requestId }, slugError.message);
+    return Response.json(
+      { data: null, error: "Failed to validate slug.", status: 500 },
+      { status: 500 },
+    );
+  }
 
   if (existing) {
     return Response.json(
@@ -116,8 +122,7 @@ async function createHandler(req: Request) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
+  const { data, error } = await admin
     .from("products")
     .insert({
       name: validation.data.name,
