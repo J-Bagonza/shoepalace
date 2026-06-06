@@ -18,17 +18,6 @@ interface ProductFormProps {
   mode: "create" | "edit";
 }
 
-const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
-
-useEffect(() => {
-  fetch("/api/admin/categories")
-    .then((r) => r.json())
-    .then((json: { data: { id: string; name: string; slug: string }[] }) => {
-      if (json.data?.length) setCategories(json.data);
-    })
-    .catch(() => null);
-}, []); 
-
 type FieldErrors = Partial<Record<keyof AdminProductFormValues, string>>;
 
 interface UploadedImage {
@@ -39,6 +28,18 @@ interface UploadedImage {
 
 export function ProductForm({ product, mode }: ProductFormProps) {
   const router = useRouter();
+
+  // ✅ Moved inside the component
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/admin/categories")
+      .then((r) => r.json())
+      .then((json: { data: { id: string; name: string; slug: string }[] }) => {
+        if (json.data?.length) setCategories(json.data);
+      })
+      .catch(() => null);
+  }, []);
 
   const [values, setValues] = useState<AdminProductFormValues>({
     name: product?.name ?? "",
@@ -430,24 +431,24 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               Category
             </label>
             <select
-  value={values.category}
-  onChange={(e) => set("category", e.target.value)}
-  className={`w-full border bg-white px-4 py-3 text-sm text-neutral-900
-    focus:border-neutral-900 focus:outline-none transition-colors
-    duration-150 appearance-none ${
-    fieldErrors.category ? "border-[#E8001D]" : "border-neutral-300"
-  }`}
->
-  {categories.length === 0 ? (
-    <option value="">Loading categories...</option>
-  ) : (
-    categories.map((cat) => (
-      <option key={cat.id} value={cat.slug}>
-        {cat.name}
-      </option>
-    ))
-  )}
-</select>
+              value={values.category}
+              onChange={(e) => set("category", e.target.value)}
+              className={`w-full border bg-white px-4 py-3 text-sm text-neutral-900
+                focus:border-neutral-900 focus:outline-none transition-colors
+                duration-150 appearance-none ${
+                fieldErrors.category ? "border-[#E8001D]" : "border-neutral-300"
+              }`}
+            >
+              {categories.length === 0 ? (
+                <option value="">Loading categories...</option>
+              ) : (
+                categories.map((cat) => (
+                  <option key={cat.id} value={cat.slug}>
+                    {cat.name}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
         </div>
 
