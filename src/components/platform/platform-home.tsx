@@ -629,8 +629,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
           {Array.from({ length: 20 }).map((_, i) => (
             <div
               key={i}
-              className="absolute font-bebas text-[120px] font-black
-                uppercase tracking-tighter"
+              className="absolute font-bebas text-[48px] sm:text-[80px] md:text-[120px] font-black
+  uppercase tracking-tighter"
               style={{
                 left: `${(i % 5) * 25}%`,
                 top: `${Math.floor(i / 5) * 33}%`,
