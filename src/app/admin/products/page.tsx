@@ -5,6 +5,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { AdminProductTable } from "@/components/admin/product-table";
 import { redirect } from "next/navigation";
+import { PRODUCT_SELECT } from "@/lib/products/queries";
 import type { Product } from "@/types/product";
 
 interface PageProps {
@@ -29,21 +30,21 @@ async function getTenantId(): Promise<string> {
   return profile.tenant_id;
 }
 
-async function getProducts(tenantId: string, showDeleted: boolean): Promise<Product[]> {
+async function getProducts(
+  tenantId: string,
+  showDeleted: boolean,
+): Promise<Product[]> {
   const admin = createAdminSupabaseClient();
 
   let query = admin
     .from("products")
-    .select(`
-      id, name, slug, price, category,
-      is_featured, deleted_at, created_at, updated_at,
-      product_images ( id, url, alt, position ),
-      product_variants ( id, size, color, stock )
-    `)
+    .select(PRODUCT_SELECT)
     .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false });
 
-  if (!showDeleted) {
+  if (showDeleted) {
+    query = query.not("deleted_at", "is", null);
+  } else {
     query = query.is("deleted_at", null);
   }
 
