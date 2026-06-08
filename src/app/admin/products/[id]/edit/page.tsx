@@ -2,9 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { ProductForm } from "@/components/admin/product-form";
-import { VariantManager } from "@/components/admin/variant-manager";
 import { PRODUCT_SELECT } from "@/lib/products/queries";
 import type { Product } from "@/types/product";
+import Link from "next/link";
 
 interface PageProps {
   params: { id: string };
@@ -52,7 +52,7 @@ async function getProduct(id: string, tenantId: string): Promise<Product | null>
 }
 
 export default async function EditProductPage({ params }: PageProps) {
-  const { tenantId, currency } = await getTenantData();
+  const { tenantId } = await getTenantData();
   const product = await getProduct(params.id, tenantId);
   if (!product) notFound();
 
@@ -67,11 +67,23 @@ export default async function EditProductPage({ params }: PageProps) {
         </p>
       </div>
 
-      {/* Product details + price */}
       <ProductForm product={product} mode="edit" />
 
-      {/* Variants + stock — inline on same page */}
-      
+      <div className="max-w-2xl border border-neutral-100 px-5 py-4
+        flex items-center justify-between gap-4">
+        <p className="text-xs text-neutral-500 uppercase tracking-widest">
+          To manage variants and stock quantities for this product, visit
+          the stock page.
+        </p>
+        <Link
+          href={`/admin/products/${product.id}/stock`}
+          className="shrink-0 text-xs uppercase tracking-widest
+            text-neutral-900 border border-neutral-900 px-4 py-2
+            hover:bg-neutral-900 hover:text-white transition-colors"
+        >
+          Manage Stock →
+        </Link>
+      </div>
     </div>
   );
 }
