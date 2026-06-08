@@ -21,13 +21,13 @@ interface RawProduct {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
-  product_images: {
+  images: {
     id: string;
     url: string;
     alt: string;
     position: number;
   }[];
-  product_variants: {
+  variants: {
     id: string;
     size: string;
     color: string;
@@ -48,10 +48,8 @@ function mapProduct(data: RawProduct): Product {
     deleted_at: data.deleted_at ?? null,
     created_at: data.created_at,
     updated_at: data.updated_at,
-    images: (data.product_images ?? []).sort(
-      (a, b) => a.position - b.position,
-    ),
-    variants: data.product_variants ?? [],
+    images: (data.images ?? []).sort((a, b) => a.position - b.position),
+    variants: data.variants ?? [],
   };
 }
 

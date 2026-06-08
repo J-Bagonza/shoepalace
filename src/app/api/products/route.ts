@@ -73,30 +73,30 @@ async function handler(req: Request): Promise<Response> {
   const total = count ?? 0;
 
   const result: PaginatedResponse<Product> = {
-    data: (data ?? []).map((item) => ({
-      id: item.id,
-      name: item.name,
-      slug: item.slug,
-      description: item.description,
-      price: item.price,
-      category: item.category,
-      is_featured: item.is_featured,
-      model_url: item.model_url ?? null,
-      deleted_at: item.deleted_at ?? null,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-      images: ((item.product_images as {
-        id: string; url: string; alt: string; position: number;
-      }[]) ?? []).sort((a, b) => a.position - b.position),
-      variants: (item.product_variants as {
-        id: string; size: string; color: string; stock: number;
-      }[]) ?? [],
-    })),
-    total,
-    page,
-    page_size,
-    total_pages: Math.ceil(total / page_size),
-  };
+  data: (data ?? []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    slug: item.slug,
+    description: item.description,
+    price: item.price,
+    category: item.category,
+    is_featured: item.is_featured,
+    model_url: item.model_url ?? null,
+    deleted_at: item.deleted_at ?? null,
+    created_at: item.created_at,
+    updated_at: item.updated_at,
+    images: ((item.images as {
+      id: string; url: string; alt: string; position: number;
+    }[]) ?? []).sort((a, b) => a.position - b.position),
+    variants: (item.variants as {
+      id: string; size: string; color: string; stock: number;
+    }[]) ?? [],
+  })),
+  total,
+  page,
+  page_size,
+  total_pages: Math.ceil(total / page_size),
+};
 
   await setCache(cacheKey, result, 60);
 

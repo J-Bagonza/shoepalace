@@ -11,7 +11,7 @@ interface PageProps {
 interface RawProduct {
   id: string;
   name: string;
-  product_variants: ProductVariant[];
+  variants: ProductVariant[];
 }
 
 async function getTenantData(): Promise<{ tenantId: string; currency: string }> {
@@ -46,7 +46,7 @@ async function getProduct(id: string, tenantId: string): Promise<RawProduct | nu
   const admin = createAdminSupabaseClient();
   const { data, error } = await admin
     .from("products")
-    .select("id, name, product_variants(id, size, color, stock)")
+    .select("id, name, variants:product_variants(id, size, color, stock)")
     .eq("id", id)
     .eq("tenant_id", tenantId)
     .single<RawProduct>();
@@ -72,7 +72,7 @@ export default async function StockPage({ params }: PageProps) {
       </div>
       <VariantManager
         productId={product.id}
-        variants={product.product_variants}
+        variants={product.variants}
         currency={currency}
       />
     </div>

@@ -10,13 +10,11 @@ export async function fetchSingleProduct(
 ): Promise<Product | null> {
   const tenantId = getTenantIdFromHeaders();
 
-  // Tenant-scoped cache key prevents cross-tenant cache leaks
   const cacheKey = productCacheKeys.single(`${tenantId}:${slug}`);
   const cached = await getCache<Product>(cacheKey);
   if (cached) return cached;
 
   const supabase = createAdminSupabaseClient();
-  await supabase.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
   const { data, error } = await supabase
     .from("products")
@@ -40,28 +38,12 @@ export async function fetchSingleProduct(
     deleted_at: data.deleted_at ?? null,
     created_at: data.created_at,
     updated_at: data.updated_at,
-    images: (data.product_images ?? []).map((img: {
-      id: string;
-      url: string;
-      alt: string;
-      position: number;
-    }) => ({
-      id: img.id,
-      url: img.url,
-      alt: img.alt,
-      position: img.position,
-    })),
-    variants: (data.product_variants ?? []).map((v: {
-      id: string;
-      size: string;
-      color: string;
-      stock: number;
-    }) => ({
-      id: v.id,
-      size: v.size,
-      color: v.color,
-      stock: v.stock,
-    })),
+    images: ((data.images as {
+      id: string; url: string; alt: string; position: number;
+    }[]) ?? []).sort((a, b) => a.position - b.position),
+    variants: (data.variants as {
+      id: string; size: string; color: string; stock: number;
+    }[]) ?? [],
   };
 
   await setCache(cacheKey, product, 120);
@@ -74,7 +56,6 @@ export async function fetchRelatedProducts(
 ): Promise<Product[]> {
   const tenantId = getTenantIdFromHeaders();
   const supabase = createAdminSupabaseClient();
-  await supabase.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
   const { data, error } = await supabase
     .from("products")
@@ -99,27 +80,11 @@ export async function fetchRelatedProducts(
     deleted_at: item.deleted_at ?? null,
     created_at: item.created_at,
     updated_at: item.updated_at,
-    images: (item.product_images ?? []).map((img: {
-      id: string;
-      url: string;
-      alt: string;
-      position: number;
-    }) => ({
-      id: img.id,
-      url: img.url,
-      alt: img.alt,
-      position: img.position,
-    })),
-    variants: (item.product_variants ?? []).map((v: {
-      id: string;
-      size: string;
-      color: string;
-      stock: number;
-    }) => ({
-      id: v.id,
-      size: v.size,
-      color: v.color,
-      stock: v.stock,
-    })),
+    images: ((item.images as {
+      id: string; url: string; alt: string; position: number;
+    }[]) ?? []).sort((a, b) => a.position - b.position),
+    variants: (item.variants as {
+      id: string; size: string; color: string; stock: number;
+    }[]) ?? [],
   }));
 }

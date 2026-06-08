@@ -4,29 +4,22 @@ import { PlatformHomePage } from "@/components/platform/platform-home";
 import { StoreHomePage } from "@/components/home/store-home";
 import { fetchStoresDirectory } from "@/lib/platform/fetch-stores-directory";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { PRODUCT_SELECT } from "@/lib/products/queries";
 import type { Product } from "@/types/product";
 
 export default async function RootPage() {
   const tenant = await getTenantFromHeaders();
 
-  // If this is the platform root domain — show directory
   if (!tenant || tenant.slug === SHOEPALACE_SLUG) {
     const stores = await fetchStoresDirectory();
     return <PlatformHomePage stores={stores} />;
   }
 
-  // Otherwise show the tenant store homepage
   const admin = createAdminSupabaseClient();
-  await admin.rpc("set_tenant_context", { p_tenant_id: tenant.id });
 
   const { data: featuredProducts } = await admin
     .from("products")
-    .select(`
-      id, name, slug, description, price, category,
-      is_featured, model_url, deleted_at, created_at, updated_at,
-      product_images ( id, url, alt, position ),
-      product_variants ( id, size, color, stock )
-    `)
+    .select(PRODUCT_SELECT)
     .eq("tenant_id", tenant.id)
     .eq("is_featured", true)
     .is("deleted_at", null)
@@ -44,12 +37,12 @@ export default async function RootPage() {
     deleted_at: p.deleted_at ?? null,
     created_at: p.created_at,
     updated_at: p.updated_at,
-    images: ((p.product_images ?? []) as {
+    images: ((p.images as {
       id: string; url: string; alt: string; position: number;
-    }[]).sort((a, b) => a.position - b.position),
-    variants: (p.product_variants ?? []) as {
+    }[]) ?? []).sort((a, b) => a.position - b.position),
+    variants: (p.variants as {
       id: string; size: string; color: string; stock: number;
-    }[],
+    }[]) ?? [],
   }));
 
   return <StoreHomePage featuredProducts={products} tenant={tenant} />;

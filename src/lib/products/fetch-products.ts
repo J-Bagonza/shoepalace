@@ -24,7 +24,6 @@ export async function fetchProducts(
 ): Promise<PaginatedResponse<Product>> {
   const tenantId = getTenantIdFromHeaders();
 
-  // Cache key MUST include tenantId to prevent cross-tenant cache leaks
   const cacheKey = productCacheKeys.list(
     `${tenantId}:${new URLSearchParams({
       ...(filters.category && { category: filters.category }),
@@ -39,7 +38,6 @@ export async function fetchProducts(
   if (cached) return cached;
 
   const supabase = createAdminSupabaseClient();
-  await supabase.rpc("set_tenant_context", { p_tenant_id: tenantId });
 
   const from = (filters.page - 1) * filters.page_size;
   const to = from + filters.page_size - 1;
@@ -51,10 +49,7 @@ export async function fetchProducts(
     .is("deleted_at", null)
     .range(from, to);
 
-  if (filters.category) {
-    query = query.eq("category", filters.category);
-  }
-
+  if (filters.category) query = query.eq("category", filters.category);
   if (filters.search) {
     const safe = filters.search.replace(/[%_\\]/g, "\\$&");
     query = query.ilike("name", `%${safe}%`);
@@ -63,9 +58,7 @@ export async function fetchProducts(
   const priceRange = parsePriceRange(filters.price);
   if (priceRange) {
     query = query.gte("price", priceRange.min);
-    if (priceRange.max !== null) {
-      query = query.lte("price", priceRange.max);
-    }
+    if (priceRange.max !== null) query = query.lte("price", priceRange.max);
   }
 
   query = applySortOrder(query, filters.sort) as typeof query;
@@ -96,10 +89,10 @@ export async function fetchProducts(
       deleted_at: p.deleted_at ?? null,
       created_at: p.created_at,
       updated_at: p.updated_at,
-      images: ((p.product_images as {
+      images: ((p.images as {
         id: string; url: string; alt: string; position: number;
       }[]) ?? []).sort((a, b) => a.position - b.position),
-      variants: (p.product_variants as {
+      variants: (p.variants as {
         id: string; size: string; color: string; stock: number;
       }[]) ?? [],
     })),
