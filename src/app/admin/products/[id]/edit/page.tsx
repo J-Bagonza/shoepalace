@@ -71,22 +71,7 @@ export default async function EditProductPage({ params }: PageProps) {
       <ProductForm product={product} mode="edit" />
 
       {/* Variants + stock — inline on same page */}
-      <div className="flex flex-col gap-4 max-w-2xl">
-        <div className="h-px bg-neutral-100" />
-        <div className="flex flex-col gap-1">
-          <h2 className="font-bebas text-2xl tracking-wide text-neutral-900">
-            Variants & Stock
-          </h2>
-          <p className="text-sm text-neutral-400">
-            Manage sizes, colors and stock quantities.
-          </p>
-        </div>
-        <VariantManager
-          productId={product.id}
-          variants={product.variants ?? []}
-          currency={currency}
-        />
-      </div>
+      
     </div>
   );
 }
