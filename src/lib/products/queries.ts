@@ -35,13 +35,13 @@ export const PRODUCT_SELECT = `
   deleted_at,
   created_at,
   updated_at,
-  product_images (
+  images:product_images (
     id,
     url,
     alt,
     position
   ),
-  product_variants (
+  variants:product_variants (
     id,
     size,
     color,
