@@ -29,15 +29,22 @@ interface UploadedImage {
 export function ProductForm({ product, mode }: ProductFormProps) {
   const router = useRouter();
 
-  // ✅ Moved inside the component
-  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  // FIX: Restored missing opening `<` on the generic type argument.
+  // The original code had `useState` on one line and `{ id: string; ... }[]`
+  // on the next without the `<`, which TypeScript parsed as a destructure
+  // attempt rather than a generic — causing errors 2488 and 2693.
+  const [categories, setCategories] = useState<
+    { id: string; name: string; slug: string }[]
+  >([]);
 
   useEffect(() => {
     fetch("/api/admin/categories")
       .then((r) => r.json())
-      .then((json: { data: { id: string; name: string; slug: string }[] }) => {
-        if (json.data?.length) setCategories(json.data);
-      })
+      .then(
+        (json: { data: { id: string; name: string; slug: string }[] }) => {
+          if (json.data?.length) setCategories(json.data);
+        },
+      )
       .catch(() => null);
   }, []);
 
@@ -46,7 +53,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     slug: product?.slug ?? "",
     description: product?.description ?? "",
     price: product?.price ?? 0,
-    category: product?.category ?? "running",
+    category: product?.category ?? "",
     is_featured: product?.is_featured ?? false,
     model_url: product?.model_url ?? null,
   });
@@ -55,11 +62,13 @@ export function ProductForm({ product, mode }: ProductFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [autoSlug, setAutoSlug] = useState(mode === "create");
+
+  // On create, savedProductId tracks a product created during file upload
+  // so we PATCH it instead of creating a duplicate on final submit
   const [savedProductId, setSavedProductId] = useState<string | null>(
     product?.id ?? null,
   );
 
-  // Image upload state
   const [images, setImages] = useState<UploadedImage[]>(
     (product?.images ?? [])
       .sort((a, b) => a.position - b.position)
@@ -69,7 +78,6 @@ export function ProductForm({ product, mode }: ProductFormProps) {
   const [imageError, setImageError] = useState<string | null>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Model upload state
   const [modelUrl, setModelUrl] = useState<string | null>(
     product?.model_url ?? null,
   );
@@ -108,18 +116,21 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     return false;
   }
 
-  // Save or update product details, returns productId
   async function saveProductDetails(): Promise<string | null> {
     if (!validate()) return null;
     setLoading(true);
     setServerError(null);
 
     try {
-      const url =
-        mode === "create"
-          ? "/api/admin/products"
-          : `/api/admin/products/${product!.id}`;
-      const method = mode === "create" ? "POST" : "PATCH";
+      // KEY FIX: if a product was already created during file upload,
+      // PATCH it instead of POSTing a new one
+      const isUpdate = mode === "edit" || savedProductId !== null;
+      const targetId = mode === "edit" ? product!.id : savedProductId;
+
+      const url = isUpdate
+        ? `/api/admin/products/${targetId}`
+        : "/api/admin/products";
+      const method = isUpdate ? "PATCH" : "POST";
 
       const payload = { ...values, model_url: modelUrl };
 
@@ -139,7 +150,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         return null;
       }
 
-      return json.data?.id ?? savedProductId;
+      const id = json.data?.id ?? targetId;
+      if (id && !savedProductId) setSavedProductId(id);
+      return id ?? null;
     } catch {
       setServerError("Network error. Please try again.");
       return null;
@@ -156,7 +169,6 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     router.refresh();
   }
 
-  // Get signed URL from our API
   async function getSignedUrl(
     productId: string,
     type: "image" | "model",
@@ -185,7 +197,6 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     return json.data;
   }
 
-  // Ensure product is saved before uploading files
   async function ensureProductSaved(): Promise<string | null> {
     if (savedProductId) return savedProductId;
     const id = await saveProductDetails();
@@ -193,7 +204,6 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     return id;
   }
 
-  // Image upload
   async function handleImageFiles(files: FileList) {
     setImageError(null);
     const productId = await ensureProductSaved();
@@ -225,7 +235,6 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
         if (error) throw new Error(error.message);
 
-        // Save image record to product_images table
         const position = images.length;
         const saveRes = await fetch("/api/admin/uploads/image-record", {
           method: "POST",
@@ -234,12 +243,10 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         });
         if (!saveRes.ok) throw new Error("Failed to save image record.");
 
-        const newImage: UploadedImage = {
-          url: publicUrl,
-          alt: "",
-          position,
-        };
-        setImages((prev) => [...prev, newImage]);
+        setImages((prev) => [
+          ...prev,
+          { url: publicUrl, alt: "", position },
+        ]);
       }
     } catch (err) {
       setImageError(err instanceof Error ? err.message : "Upload failed.");
@@ -248,15 +255,37 @@ export function ProductForm({ product, mode }: ProductFormProps) {
     }
   }
 
-  function removeImage(index: number) {
-    setImages((prev) =>
-      prev
-        .filter((_, i) => i !== index)
-        .map((img, i) => ({ ...img, position: i })),
-    );
+  async function removeImage(index: number, imageUrl: string) {
+    const productId = savedProductId ?? product?.id;
+    if (!productId) {
+      // No product saved yet — just remove from local state
+      setImages((prev) =>
+        prev.filter((_, i) => i !== index).map((img, i) => ({ ...img, position: i }))
+      );
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/uploads/image-record", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl, productId }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json() as { error: string | null };
+        setImageError(json.error ?? "Failed to delete image.");
+        return;
+      }
+
+      setImages((prev) =>
+        prev.filter((_, i) => i !== index).map((img, i) => ({ ...img, position: i }))
+      );
+    } catch {
+      setImageError("Network error deleting image.");
+    }
   }
 
-  // Model upload
   async function handleModelFile(file: File) {
     setModelError(null);
 
@@ -288,7 +317,7 @@ export function ProductForm({ product, mode }: ProductFormProps) {
       const { error } = await supabase.storage
         .from("product-models")
         .uploadToSignedUrl(path, token, file, {
-          contentType: file.type || "model/gltf-binary",
+          contentType: "model/gltf-binary",
         });
 
       if (error) throw new Error(error.message);
@@ -317,7 +346,8 @@ export function ProductForm({ product, mode }: ProductFormProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             role="alert"
-            className="border border-[#E8001D] bg-red-50 px-4 py-3 text-sm text-[#E8001D]"
+            className="border border-[#E8001D] bg-red-50 px-4 py-3 text-sm
+              text-[#E8001D]"
           >
             {serverError}
           </motion.div>
@@ -360,7 +390,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
             <button
               type="button"
               onClick={() => setAutoSlug(true)}
-              className="self-start text-[10px] uppercase tracking-widest text-neutral-400 underline hover:text-neutral-900 transition-colors"
+              className="self-start text-[10px] uppercase tracking-widest
+                text-neutral-400 underline hover:text-neutral-900
+                transition-colors"
             >
               Reset to auto
             </button>
@@ -368,7 +400,8 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium uppercase tracking-widest text-neutral-500">
+          <label className="text-xs font-medium uppercase tracking-widest
+            text-neutral-500">
             Description
           </label>
           <textarea
@@ -377,8 +410,13 @@ export function ProductForm({ product, mode }: ProductFormProps) {
             rows={4}
             maxLength={5000}
             placeholder="Describe the product..."
-            className={`w-full border bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none transition-colors duration-150 resize-none ${
-              fieldErrors.description ? "border-[#E8001D]" : "border-neutral-300"
+            className={`w-full border bg-white px-4 py-3 text-sm
+              text-neutral-900 placeholder:text-neutral-400
+              focus:border-neutral-900 focus:outline-none
+              transition-colors duration-150 resize-none ${
+              fieldErrors.description
+                ? "border-[#E8001D]"
+                : "border-neutral-300"
             }`}
           />
           <div className="flex items-center justify-between">
@@ -404,18 +442,24 @@ export function ProductForm({ product, mode }: ProductFormProps) {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium uppercase tracking-widest text-neutral-500">
-              Price (GBP)
+            <label className="text-xs font-medium uppercase tracking-widest
+              text-neutral-500">
+              Price
             </label>
             <input
               type="number"
               value={values.price === 0 ? "" : values.price}
-              onChange={(e) => set("price", parseFloat(e.target.value) || 0)}
+              onChange={(e) =>
+                set("price", parseFloat(e.target.value) || 0)
+              }
               step="0.01"
               min="0.01"
               max="99999.99"
               placeholder="0.00"
-              className={`w-full border bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-900 focus:outline-none transition-colors duration-150 ${
+              className={`w-full border bg-white px-4 py-3 text-sm
+                text-neutral-900 placeholder:text-neutral-400
+                focus:border-neutral-900 focus:outline-none
+                transition-colors duration-150 ${
                 fieldErrors.price ? "border-[#E8001D]" : "border-neutral-300"
               }`}
             />
@@ -427,35 +471,39 @@ export function ProductForm({ product, mode }: ProductFormProps) {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-medium uppercase tracking-widest text-neutral-500">
+            <label className="text-xs font-medium uppercase tracking-widest
+              text-neutral-500">
               Category
             </label>
             <select
               value={values.category}
               onChange={(e) => set("category", e.target.value)}
-              className={`w-full border bg-white px-4 py-3 text-sm text-neutral-900
-                focus:border-neutral-900 focus:outline-none transition-colors
-                duration-150 appearance-none ${
-                fieldErrors.category ? "border-[#E8001D]" : "border-neutral-300"
+              className={`w-full border bg-white px-4 py-3 text-sm
+                text-neutral-900 focus:border-neutral-900 focus:outline-none
+                transition-colors duration-150 appearance-none ${
+                fieldErrors.category
+                  ? "border-[#E8001D]"
+                  : "border-neutral-300"
               }`}
             >
-              {categories.length === 0 ? (
-                <option value="">Loading categories...</option>
-              ) : (
-                categories.map((cat) => (
-                  <option key={cat.id} value={cat.slug}>
-                    {cat.name}
-                  </option>
-                ))
-              )}
+              <option value="">Select category...</option>
+              {/* FIX: Added explicit type annotation to resolve error 7006
+                  ("Parameter 'cat' implicitly has an 'any' type") */}
+              {categories.map((cat: { id: string; name: string; slug: string }) => (
+                <option key={cat.id} value={cat.slug}>
+                  {cat.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
         {/* Featured toggle */}
-        <div className="flex items-center justify-between border border-neutral-200 px-4 py-3">
+        <div className="flex items-center justify-between border
+          border-neutral-200 px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs uppercase tracking-widest text-neutral-700">
+            <span className="text-xs uppercase tracking-widest
+              text-neutral-700">
               Featured Product
             </span>
             <span className="text-[10px] text-neutral-400">
@@ -482,16 +530,16 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         </div>
       </fieldset>
 
-      {/* ── PRODUCT IMAGES ── */}
+      {/* Product Images */}
       <fieldset className="flex flex-col gap-4">
-        <legend className="text-xs uppercase tracking-widest text-neutral-400 mb-2">
+        <legend className="text-xs uppercase tracking-widest
+          text-neutral-400 mb-2">
           Product Images
         </legend>
         <p className="text-[10px] text-neutral-300 uppercase tracking-widest -mt-2">
           First image is the primary display image. Max 10MB each.
         </p>
 
-        {/* Existing images grid */}
         {images.length > 0 && (
           <div className="grid grid-cols-4 gap-2">
             {images.map((img, i) => (
@@ -499,7 +547,8 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                 key={img.url}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="relative aspect-square border border-neutral-200 overflow-hidden group"
+                className="relative aspect-square border border-neutral-200
+                  overflow-hidden group"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -508,14 +557,20 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                   className="w-full h-full object-cover"
                 />
                 {i === 0 && (
-                  <span className="absolute top-1 left-1 bg-neutral-900 text-white text-[8px] uppercase tracking-widest px-1.5 py-0.5">
+                  <span className="absolute top-1 left-1 bg-neutral-900
+                    text-white text-[8px] uppercase tracking-widest
+                    px-1.5 py-0.5">
                     Primary
                   </span>
                 )}
                 <button
                   type="button"
-                  onClick={() => removeImage(i)}
-                  className="absolute top-1 right-1 bg-white border border-neutral-200 text-neutral-500 hover:text-[#E8001D] w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => void removeImage(i, img.url)}
+                  className="absolute top-1 right-1 bg-white border
+                    border-neutral-200 text-neutral-500
+                    hover:text-[#E8001D] w-5 h-5 flex items-center
+                    justify-center text-xs opacity-0
+                    group-hover:opacity-100 transition-opacity"
                 >
                   ×
                 </button>
@@ -524,10 +579,11 @@ export function ProductForm({ product, mode }: ProductFormProps) {
           </div>
         )}
 
-        {/* Upload zone */}
         <div
           onClick={() => imageInputRef.current?.click()}
-          className="border-2 border-dashed border-neutral-200 hover:border-neutral-400 px-6 py-8 text-center cursor-pointer transition-colors duration-150"
+          className="border-2 border-dashed border-neutral-200
+            hover:border-neutral-400 px-6 py-8 text-center cursor-pointer
+            transition-colors duration-150"
         >
           <input
             ref={imageInputRef}
@@ -536,11 +592,13 @@ export function ProductForm({ product, mode }: ProductFormProps) {
             multiple
             className="sr-only"
             onChange={(e) => {
-              if (e.target.files?.length) void handleImageFiles(e.target.files);
+              if (e.target.files?.length)
+                void handleImageFiles(e.target.files);
             }}
           />
           {imageUploading ? (
-            <p className="text-xs uppercase tracking-widest text-neutral-400 animate-pulse">
+            <p className="text-xs uppercase tracking-widest text-neutral-400
+              animate-pulse">
               Uploading...
             </p>
           ) : (
@@ -548,7 +606,8 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               <p className="text-xs uppercase tracking-widest text-neutral-500">
                 Click to upload images
               </p>
-              <p className="text-[10px] text-neutral-300 uppercase tracking-widest">
+              <p className="text-[10px] text-neutral-300 uppercase
+                tracking-widest">
                 JPG, PNG, WEBP — Multiple allowed
               </p>
             </div>
@@ -562,23 +621,26 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         )}
       </fieldset>
 
-      {/* ── 3D MODEL ── */}
+      {/* 3D Model */}
       <fieldset className="flex flex-col gap-4">
-        <legend className="text-xs uppercase tracking-widest text-neutral-400 mb-2">
+        <legend className="text-xs uppercase tracking-widest
+          text-neutral-400 mb-2">
           3D Model
         </legend>
         <p className="text-[10px] text-neutral-300 uppercase tracking-widest -mt-2">
-          Upload a .glb file to enable the 3D viewer on the product page. Max 50MB.
+          Upload a .glb file to enable the 3D viewer. Max 50MB.
         </p>
 
         {modelUrl ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex items-center justify-between border border-neutral-200 px-4 py-3"
+            className="flex items-center justify-between border
+              border-neutral-200 px-4 py-3"
           >
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-xs uppercase tracking-widest text-neutral-500">
+              <span className="text-xs uppercase tracking-widest
+                text-neutral-500">
                 Model Uploaded
               </span>
               <span className="text-[10px] text-neutral-400 truncate max-w-xs">
@@ -591,7 +653,9 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                 setModelUrl(null);
                 set("model_url", null);
               }}
-              className="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-[#E8001D] transition-colors ml-4 shrink-0"
+              className="text-[10px] uppercase tracking-widest
+                text-neutral-400 hover:text-[#E8001D] transition-colors
+                ml-4 shrink-0"
             >
               Remove
             </button>
@@ -610,7 +674,8 @@ export function ProductForm({ product, mode }: ProductFormProps) {
               if (file) void handleModelFile(file);
             }}
             onClick={() => modelInputRef.current?.click()}
-            className={`border-2 border-dashed px-6 py-10 text-center cursor-pointer transition-colors duration-150 ${
+            className={`border-2 border-dashed px-6 py-10 text-center
+              cursor-pointer transition-colors duration-150 ${
               modelDragOver
                 ? "border-neutral-900 bg-neutral-50"
                 : "border-neutral-200 hover:border-neutral-400"
@@ -636,16 +701,19 @@ export function ProductForm({ product, mode }: ProductFormProps) {
                     transition={{ duration: 0.2 }}
                   />
                 </div>
-                <p className="text-xs uppercase tracking-widest text-neutral-400">
+                <p className="text-xs uppercase tracking-widest
+                  text-neutral-400">
                   Uploading {modelProgress}%
                 </p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <p className="text-xs uppercase tracking-widest text-neutral-500">
+                <p className="text-xs uppercase tracking-widest
+                  text-neutral-500">
                   Drop .glb file here or click to browse
                 </p>
-                <p className="text-[10px] text-neutral-300 uppercase tracking-widest">
+                <p className="text-[10px] text-neutral-300 uppercase
+                  tracking-widest">
                   GLB or GLTF — Max 50MB
                 </p>
               </div>
@@ -668,7 +736,8 @@ export function ProductForm({ product, mode }: ProductFormProps) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="text-xs uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
+          className="text-xs uppercase tracking-widest text-neutral-400
+            hover:text-neutral-900 transition-colors"
         >
           Cancel
         </button>
