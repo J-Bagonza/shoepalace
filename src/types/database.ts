@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      tenant_usage_metrics: {
+        Row: {
+          id: string
+          tenant_id: string
+          date: string
+          api_requests: number
+          page_views: number
+          orders_placed: number
+          revenue_kes: number
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          date?: string
+          api_requests?: number
+          page_views?: number
+          orders_placed?: number
+          revenue_kes?: number
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          date?: string
+          api_requests?: number
+          page_views?: number
+          orders_placed?: number
+          revenue_kes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_usage_metrics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -936,6 +974,16 @@ export type Database = {
       }
     }
     Functions: {
+      increment_tenant_usage: {
+        Args: {
+          p_tenant_id: string
+          p_api_requests?: number
+          p_page_views?: number
+          p_orders_placed?: number
+          p_revenue_kes?: number
+        }
+        Returns: undefined
+      }
       approve_tenant_request: {
         Args: { p_request_id: string; p_reviewer_id: string }
         Returns: string

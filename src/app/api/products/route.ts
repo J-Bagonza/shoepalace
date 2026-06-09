@@ -2,6 +2,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import { validateQuery } from "@/lib/validations/request";
 import { productListQuerySchema } from "@/lib/validations/product";
+import { trackApiRequest } from "@/lib/metrics/track-usage";
 import { withRateLimit } from "@/lib/security/with-rate-limit";
 import { getCache, setCache } from "@/lib/redis/cache";
 import { productCacheKeys } from "@/lib/products/cache-keys";
@@ -19,7 +20,10 @@ async function handler(req: Request): Promise<Response> {
   const { page, page_size, category, sort, search, featured } = validation.data;
 
   const tenantId = getTenantIdFromHeaders();
-
+ 
+  // Track API request — fire and forget
+  trackApiRequest(tenantId);
+  
   // Build tenant-scoped cache key
   const url = new URL(req.url);
   const cacheKey = productCacheKeys.list(

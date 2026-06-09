@@ -3,6 +3,7 @@ import { sendOrderConfirmationEmail } from "@/lib/email/order-emails";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { withRateLimit } from "@/lib/security/with-rate-limit";
 import { validateBody } from "@/lib/validations/request";
+import { trackOrder } from "@/lib/metrics/track-usage";
 import { createOrderSchema } from "@/lib/validations/order";
 import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import { createRequestLogger } from "@/lib/logger/request-logger";
@@ -210,6 +211,9 @@ async function handler(req: Request): Promise<Response> {
     { requestId, event: "order.create.success", orderId: order.id },
     "Order created",
   );
+
+  // Track usage metric — fire and forget
+  trackOrder(tenantId, total)
 
   // Send confirmation email — fire and forget, never block the response
   sendOrderConfirmationEmail(order.id, tenantId).catch((err) =>
