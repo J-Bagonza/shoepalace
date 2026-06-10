@@ -8,18 +8,12 @@ import { z } from "zod";
 import type { ApiResponse } from "@/types/api";
 
 const updatePaymentSettingsSchema = z.object({
-  payhero_api_key: z
-    .string()
-    .min(10, "API key is too short")
-    .max(500)
-    .trim()
-    .optional(),
-  payhero_channel_id: z
-    .string()
-    .min(1)
-    .max(100)
-    .trim()
-    .optional(),
+  payhero_api_key: z.string().min(10).max(500).trim().optional(),
+  payhero_channel_id: z.union([
+    z.string().max(100).trim(),
+    z.literal(""),
+    z.null(),
+  ]).optional().transform((v) => (v === "" ? null : v)),
   is_active: z.boolean().optional(),
 });
 

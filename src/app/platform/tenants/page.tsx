@@ -1,8 +1,5 @@
-"use client";
-
 import { fetchAllTenants } from "@/lib/platform/fetch-platform-data";
 import Link from "next/link";
-import { useState } from "react";
 import type { Tenant } from "@/types/tenant";
 
 function formatDate(iso: string): string {
@@ -11,61 +8,6 @@ function formatDate(iso: string): string {
     month: "short",
     year: "numeric",
   });
-}
-
-function TenantStatusToggle({ tenant }: { tenant: Tenant }) {
-  return (
-    <span
-      className={`text-[10px] uppercase tracking-widest ${
-        tenant.is_active ? "text-green-600" : "text-red-500"
-      }`}
-    >
-      {tenant.is_active ? "Active" : "Inactive"}
-    </span>
-  );
-}
-
-function ResendInviteButton({ tenantId }: { tenantId: string }) {
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleResend() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/platform/requests/resend-invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenant_id: tenantId }),
-      });
-      const json = await res.json() as { error: string | null };
-      if (!res.ok || json.error) {
-        setError(json.error ?? "Failed.");
-        return;
-      }
-      setDone(true);
-    } catch {
-      setError("Network error.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-1">
-      <button
-        onClick={handleResend}
-        disabled={loading || done}
-        className="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors disabled:opacity-50"
-      >
-        {done ? "Sent ✓" : loading ? "Sending..." : "Resend Invite"}
-      </button>
-      {error && (
-        <span className="text-[10px] text-red-500">{error}</span>
-      )}
-    </div>
-  );
 }
 
 export default async function PlatformTenantsPage() {
@@ -84,14 +26,71 @@ export default async function PlatformTenantsPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-neutral-100 overflow-hidden">
+      {/* Mobile cards */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {tenants.length === 0 ? (
+          <div className="p-12 text-center border border-neutral-100">
+            <p className="text-sm text-neutral-400 uppercase tracking-widest">
+              No stores yet.
+            </p>
+          </div>
+        ) : (
+          tenants.map((tenant: Tenant) => (
+            <div
+              key={tenant.id}
+              className="bg-white border border-neutral-100 p-4
+                flex flex-col gap-3"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-sm font-medium text-neutral-900">
+                    {tenant.name}
+                  </span>
+                  <a
+                    href={`https://${tenant.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-neutral-400 hover:text-neutral-900
+                      transition-colors underline underline-offset-2"
+                  >
+                    {tenant.slug}.shoepalace.store
+                  </a>
+                </div>
+                <span className={`text-[10px] uppercase tracking-widest ${
+                  tenant.is_active ? "text-green-600" : "text-red-500"
+                }`}>
+                  {tenant.is_active ? "Active" : "Inactive"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-2
+                border-t border-neutral-50">
+                <span className="text-[10px] text-neutral-400">
+                  {formatDate(tenant.created_at)}
+                </span>
+                <Link
+                  href={`/platform/tenants/${tenant.id}`}
+                  className="text-[10px] uppercase tracking-widest
+                    text-neutral-500 hover:text-neutral-900 transition-colors"
+                >
+                  Manage →
+                </Link>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block bg-white border border-neutral-100
+        overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-neutral-100 bg-neutral-50">
               {["Store", "Subdomain", "Status", "Created", "Actions"].map((h) => (
                 <th
                   key={h}
-                  className="px-5 py-3 text-left text-[10px] uppercase tracking-widest text-neutral-400 font-normal"
+                  className="px-5 py-3 text-left text-[10px] uppercase
+                    tracking-widest text-neutral-400 font-normal"
                 >
                   {h}
                 </th>
@@ -102,7 +101,8 @@ export default async function PlatformTenantsPage() {
             {tenants.map((tenant: Tenant) => (
               <tr
                 key={tenant.id}
-                className="border-b border-neutral-50 last:border-0 hover:bg-neutral-50 transition-colors"
+                className="border-b border-neutral-50 last:border-0
+                  hover:bg-neutral-50 transition-colors"
               >
                 <td className="px-5 py-4">
                   <div className="flex flex-col gap-0.5">
@@ -119,27 +119,30 @@ export default async function PlatformTenantsPage() {
                     href={`https://${tenant.slug}.${process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-neutral-500 hover:text-neutral-900 transition-colors underline underline-offset-2"
+                    className="text-xs text-neutral-500 hover:text-neutral-900
+                      transition-colors underline underline-offset-2"
                   >
-                    {tenant.slug}.{process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store"}
+                    {tenant.slug}.shoepalace.store
                   </a>
                 </td>
                 <td className="px-5 py-4">
-                  <TenantStatusToggle tenant={tenant} />
+                  <span className={`text-[10px] uppercase tracking-widest ${
+                    tenant.is_active ? "text-green-600" : "text-red-500"
+                  }`}>
+                    {tenant.is_active ? "Active" : "Inactive"}
+                  </span>
                 </td>
                 <td className="px-5 py-4 text-xs text-neutral-400">
                   {formatDate(tenant.created_at)}
                 </td>
                 <td className="px-5 py-4">
-                  <div className="flex flex-col gap-2">
-                    <Link
-                      href={`/platform/tenants/${tenant.id}`}
-                      className="text-[10px] uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors"
-                    >
-                      Manage
-                    </Link>
-                    <ResendInviteButton tenantId={tenant.id} />
-                  </div>
+                  <Link
+                    href={`/platform/tenants/${tenant.id}`}
+                    className="text-[10px] uppercase tracking-widest
+                      text-neutral-500 hover:text-neutral-900 transition-colors"
+                  >
+                    Manage →
+                  </Link>
                 </td>
               </tr>
             ))}

@@ -11,13 +11,17 @@ import type { TenantSettings } from "@/types/tenant";
 const updateSettingsSchema = z.object({
   tagline: z.string().max(255).trim().optional(),
   contact_email: z.string().email().max(254).optional(),
-  currency: z.enum(["GBP", "KES", "USD"]).optional(),
   contact_phone: z.string().max(30).trim().optional(),
   contact_address: z.string().max(255).trim().optional(),
-  instagram_url: z.string().url().max(2048).optional().nullable(),
+  instagram_url: z.union([
+    z.string().url().max(2048),
+    z.literal(""),
+    z.null(),
+  ]).optional().transform((v) => (v === "" ? null : v)),
   whatsapp_number: z.string().max(30).trim().optional(),
   shipping_info: z.string().max(500).trim().optional(),
   returns_info: z.string().max(500).trim().optional(),
+  currency: z.enum(["GBP", "KES", "USD"]).optional(),
 });
 
 async function getHandler(req: Request): Promise<Response> {
