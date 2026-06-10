@@ -878,6 +878,74 @@ export type Database = {
           },
         ]
       }
+      ad_listings: {
+        Row: {
+          id: string
+          tenant_id: string
+          placement: string
+          message: string | null
+          requested_start: string | null
+          requested_end: string | null
+          status: string
+          approved_start: string | null
+          approved_end: string | null
+          price_kes: number | null
+          payment_status: string
+          rejection_note: string | null
+          admin_note: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          placement: string
+          message?: string | null
+          requested_start?: string | null
+          requested_end?: string | null
+          status?: string
+          approved_start?: string | null
+          approved_end?: string | null
+          price_kes?: number | null
+          payment_status?: string
+          rejection_note?: string | null
+          admin_note?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          placement?: string
+          message?: string | null
+          requested_start?: string | null
+          requested_end?: string | null
+          status?: string
+          approved_start?: string | null
+          approved_end?: string | null
+          price_kes?: number | null
+          payment_status?: string
+          rejection_note?: string | null
+          admin_note?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_listings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -974,6 +1042,23 @@ export type Database = {
       }
     }
     Functions: {
+      get_active_ads: {
+        Args: { p_placement?: string }
+        Returns: {
+          id: string
+          tenant_id: string
+          tenant_name: string
+          tenant_slug: string
+          tenant_logo: string | null
+          placement: string
+          approved_start: string
+          approved_end: string
+        }[]
+      }
+      expire_ad_listings: {
+        Args: Record<string, never>
+        Returns: undefined
+      }
       increment_tenant_usage: {
         Args: {
           p_tenant_id: string

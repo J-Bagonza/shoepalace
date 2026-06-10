@@ -1,5 +1,6 @@
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import type { Tenant } from "@/types/tenant";
+import type { ActiveAd } from "@/types/ads";
 
 export interface StoreWithProducts {
   tenant: Tenant;
@@ -10,12 +11,21 @@ export interface StoreWithProducts {
     price: number;
     image_url: string | null;
   }[];
+  is_featured: boolean; // has active directory_top ad
 }
 
 export async function fetchStoresDirectory(): Promise<StoreWithProducts[]> {
   const admin = createAdminSupabaseClient();
 
-  // Get all active tenants except the platform itself
+  // Get active directory_top ads
+  const { data: activeAds } = await admin.rpc("get_active_ads", {
+    p_placement: "directory_top",
+  }).returns<ActiveAd[]>();
+
+  const featuredTenantIds = new Set(
+    (activeAds ?? []).map((a) => a.tenant_id),
+  );
+
   const { data: tenants, error } = await admin
     .from("tenants")
     .select("*")
@@ -26,13 +36,8 @@ export async function fetchStoresDirectory(): Promise<StoreWithProducts[]> {
 
   if (error || !tenants || tenants.length === 0) return [];
 
-  // For each tenant fetch up to 6 featured products with primary image
   const stores = await Promise.all(
     tenants.map(async (tenant) => {
-      await admin.rpc("set_tenant_context", {
-        p_tenant_id: tenant.id,
-      });
-
       const { data: products } = await admin
         .from("products")
         .select(`
@@ -42,11 +47,11 @@ export async function fetchStoresDirectory(): Promise<StoreWithProducts[]> {
         .eq("tenant_id", tenant.id)
         .is("deleted_at", null)
         .order("is_featured", { ascending: false })
-        .order("created_at", { ascending: false })
         .limit(6);
 
       return {
         tenant,
+        is_featured: featuredTenantIds.has(tenant.id),
         products: (products ?? []).map(
           (p: {
             id: string;
@@ -71,5 +76,10 @@ export async function fetchStoresDirectory(): Promise<StoreWithProducts[]> {
     }),
   );
 
-  return stores;
+  // Featured stores (directory_top ad) appear first
+  return stores.sort((a, b) => {
+    if (a.is_featured && !b.is_featured) return -1;
+    if (!a.is_featured && b.is_featured) return 1;
+    return 0;
+  });
 }

@@ -48,6 +48,13 @@ export default async function AdminLayout({
             >
               Settings
             </Link>
+            <Link
+               href="/admin/advertise"
+               className="text-xs uppercase tracking-widest text-neutral-400
+             hover:text-neutral-900 transition-colors"
+             >
+              Advertise
+            </Link>
             <span className="text-xs text-neutral-400 uppercase tracking-widest">
               {user.email}
             </span>

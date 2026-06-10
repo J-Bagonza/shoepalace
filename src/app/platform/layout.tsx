@@ -23,6 +23,7 @@ export default async function PlatformLayout({
                 { href: "/platform", label: "Overview" },
                 { href: "/platform/tenants", label: "Stores" },
                 { href: "/platform/requests", label: "Requests" },
+                { href: "/platform/ads", label: "Ads" },
               ].map((link) => (
                 <Link
                   key={link.href}

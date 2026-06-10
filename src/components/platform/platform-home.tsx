@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import clsx from "clsx";
 import { formatPrice } from "@/utils/product";
 import { createClient } from "@/lib/supabase/client";
 import type { StoreWithProducts } from "@/lib/platform/fetch-stores-directory";
@@ -530,7 +531,12 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.4 }}
-      className="border border-neutral-100 bg-white overflow-hidden"
+      className={clsx(
+        "border bg-white overflow-hidden transition-all",
+        store.is_featured
+          ? "border-neutral-900 shadow-sm"
+          : "border-neutral-100",
+      )}
     >
       <div className="flex items-center justify-between px-5 py-4
         border-b border-neutral-100">
@@ -578,6 +584,13 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
         >
           Visit →
         </a>
+        {store.is_featured && (
+          <span className="text-[10px] uppercase tracking-widest
+            text-[#E8001D] border border-[#E8001D] px-2 py-0.5
+            shrink-0">
+            Featured
+          </span>
+        )}
       </div>
       <div className="px-5 py-4">
         <ProductCarousel
