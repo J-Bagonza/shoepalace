@@ -66,12 +66,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center
-      bg-[#F5F0E8] px-6">
-      <div className="w-full max-w-sm bg-white p-10">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#F5F0E8] px-6 overflow-hidden">
+
+      {/* Red grid background */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(232,0,29,0.08) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(232,0,29,0.08) 1px, transparent 1px)
+          `,
+          backgroundSize: "40px 40px",
+        }}
+      />
+      {/* Subtle vignette to fade edges */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse at center, transparent 40%, rgba(245,240,232,0.85) 100%)",
+        }}
+      />
+
+      <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-xl shadow-neutral-200/60 p-10">
         <div className="w-8 h-0.5 bg-[#E8001D] mb-6" />
-        <h1 className="font-bebas text-5xl leading-none text-neutral-900 mb-2">
-          Sign<br />In
+
+        {/* Title — single line on desktop */}
+        <h1 className="font-bebas text-5xl leading-none text-neutral-900 mb-2 whitespace-nowrap">
+          Sign In
         </h1>
         <p className="text-sm text-neutral-500 mb-8">
           Welcome back to ShoePalace.
@@ -112,8 +133,7 @@ export default function LoginPage() {
         {/* Divider */}
         <div className="flex items-center gap-3 my-6">
           <div className="flex-1 h-px bg-neutral-100" />
-          <span className="text-[10px] uppercase tracking-widest
-            text-neutral-400">
+          <span className="text-[10px] uppercase tracking-widest text-neutral-400">
             or
           </span>
           <div className="flex-1 h-px bg-neutral-100" />
@@ -127,7 +147,7 @@ export default function LoginPage() {
           className="w-full border border-neutral-200 bg-white px-4 py-3.5
             text-xs text-neutral-700 hover:border-neutral-900
             transition-colors flex items-center justify-center gap-3
-            disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
         >
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
