@@ -32,29 +32,11 @@ const NAV_GROUPS: { label: string; links: NavItem[] }[] = [
   },
 ];
 
-// Flat nav links for the radial menu, with "Back to Store" appended as the 7th pill
+// All nav links flat, with "Back to Store" appended at the end
 const ALL_NAV_LINKS: NavItem[] = [
   ...NAV_GROUPS.flatMap((g) => g.links),
   { href: "/", label: "Back to Store", isBack: true },
 ];
-
-// Keep angles strictly between -90° and +90° so cos is always positive,
-// meaning every pill has a positive (leftward) x offset from the right-edge anchor.
-function getArcPositions(count: number) {
-  const startAngle = -75;
-  const endAngle = 75;
-  const radius = 165;
-
-  return Array.from({ length: count }, (_, i) => {
-    const t = count === 1 ? 0.5 : i / (count - 1);
-    const angleDeg = startAngle + t * (endAngle - startAngle);
-    const angleRad = (angleDeg * Math.PI) / 180;
-    return {
-      x: Math.cos(angleRad) * radius,
-      y: Math.sin(angleRad) * radius,
-    };
-  });
-}
 
 function NavLink({
   href,
@@ -144,8 +126,8 @@ function Sidebar({
   );
 }
 
-// Radial arc mobile menu — pills fan out from the right edge
-function RadialMenu({
+// Stacked pill mobile menu — replaces the broken radial arc
+function MobileMenu({
   open,
   onClose,
   email,
@@ -155,18 +137,19 @@ function RadialMenu({
   email: string;
 }) {
   const pathname = usePathname();
-  const positions = getArcPositions(ALL_NAV_LINKS.length);
 
-  // Close on route change
+  // close on route change
   useEffect(() => {
     onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Lock body scroll
+  // lock body scroll while open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   return (
@@ -179,25 +162,23 @@ function RadialMenu({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
             className="fixed inset-0 z-30 lg:hidden"
-            style={{ background: "rgba(0,0,0,0.18)" }}
+            style={{ background: "rgba(0,0,0,0.35)" }}
           />
 
-          {/* Invisible anchor pinned to right-center of screen.
-              All pills are positioned relative to this. */}
-          <div
-            className="fixed right-0 z-40 lg:hidden pointer-events-none"
-            style={{
-              top: "50%",
-              transform: "translateY(-50%)",
-              width: 0,
-              height: 0,
-            }}
+          {/* Pills — centered vertically, full width */}
+          <motion.div
+            key="pills"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-x-0 z-40 lg:hidden flex flex-col items-center justify-center gap-3"
+            style={{ top: "50%", transform: "translateY(-50%)" }}
           >
             {ALL_NAV_LINKS.map((link, i) => {
-              const { x, y } = positions[i] ?? { x: 0, y: 0 };
               const isActive =
                 !link.isBack &&
                 (link.exact
@@ -207,57 +188,44 @@ function RadialMenu({
               return (
                 <motion.div
                   key={link.href + i}
-                  initial={{ x: 120, y, opacity: 0, scale: 0.7 }}
-                  animate={{ x, y, opacity: 1, scale: 1 }}
-                  exit={{ x: 120, y, opacity: 0, scale: 0.7 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 320,
-                    damping: 28,
-                    delay: i * 0.055,
-                    opacity: { duration: 0.18 },
-                  }}
-                  style={{
-                    position: "absolute",
-                    left: -60,
-                    top: -18,
-                    pointerEvents: "auto",
-                  }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ delay: i * 0.045, duration: 0.18 }}
                 >
                   <Link
                     href={link.href}
                     onClick={onClose}
                     className={clsx(
                       "flex items-center justify-center",
-                      "h-9 px-5 rounded-full",
-                      "text-[10px] uppercase tracking-[0.12em] font-medium",
-                      "transition-colors duration-150 whitespace-nowrap",
-                      "shadow-sm",
+                      "h-10 px-8 rounded-full",
+                      "text-[11px] uppercase tracking-[0.14em] font-medium",
+                      "transition-colors duration-150 whitespace-nowrap shadow-sm",
                       link.isBack
                         ? "bg-neutral-100 text-neutral-500 border border-neutral-200 hover:border-neutral-400 hover:text-neutral-700"
                         : isActive
                         ? "bg-neutral-900 text-white"
                         : "bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-900 hover:text-neutral-900",
                     )}
-                    style={{ minWidth: 110 }}
+                    style={{ minWidth: 160 }}
                   >
                     {link.label}
                   </Link>
                 </motion.div>
               );
             })}
-          </div>
+          </motion.div>
 
-          {/* Email footer — bottom-right */}
+          {/* Email footer — bottom center */}
           <motion.div
             key="footer"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
-            transition={{ delay: 0.25, duration: 0.2 }}
-            className="fixed bottom-6 right-4 z-40 lg:hidden"
+            transition={{ delay: 0.3, duration: 0.2 }}
+            className="fixed bottom-6 inset-x-0 z-40 lg:hidden flex justify-center"
           >
-            <p className="text-[10px] text-neutral-400 tracking-widest truncate max-w-[180px]">
+            <p className="text-[10px] text-neutral-400 tracking-widest truncate max-w-[200px]">
               {email}
             </p>
           </motion.div>
@@ -295,20 +263,52 @@ export function AdminShell({
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Mobile topbar */}
-        <header className="lg:hidden bg-white border-b border-neutral-100
-          sticky top-0 z-20">
+        <header className="lg:hidden bg-white border-b border-neutral-100 sticky top-0 z-20">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3">
-              {/* Hamburger */}
+              {/* Hamburger / X toggle */}
               <button
-                onClick={() => setDrawerOpen(true)}
-                className="flex flex-col gap-1.5 p-1 -ml-1"
-                aria-label="Open menu"
+                onClick={() => setDrawerOpen((v) => !v)}
+                className="flex items-center justify-center w-8 h-8 -ml-1"
+                aria-label={drawerOpen ? "Close menu" : "Open menu"}
               >
-                <span className="block h-px w-5 bg-neutral-900" />
-                <span className="block h-px w-5 bg-neutral-900" />
-                <span className="block h-px w-3.5 bg-neutral-900" />
+                <AnimatePresence mode="wait">
+                  {drawerOpen ? (
+                    <motion.svg
+                      key="x"
+                      initial={{ opacity: 0, rotate: -45 }}
+                      animate={{ opacity: 1, rotate: 0 }}
+                      exit={{ opacity: 0, rotate: 45 }}
+                      transition={{ duration: 0.15 }}
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                    >
+                      <path
+                        d="M1 1L15 15M15 1L1 15"
+                        stroke="#E8001D"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                    </motion.svg>
+                  ) : (
+                    <motion.div
+                      key="burger"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex flex-col gap-1.5"
+                    >
+                      <span className="block h-px w-5 bg-neutral-900" />
+                      <span className="block h-px w-5 bg-neutral-900" />
+                      <span className="block h-px w-3.5 bg-neutral-900" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </button>
+
               <span className="text-xs uppercase tracking-widest text-neutral-500">
                 {currentLabel}
               </span>
@@ -321,33 +321,13 @@ export function AdminShell({
               ShoePalace
             </Link>
 
-            {/* Close X visible when menu is open */}
-            <AnimatePresence>
-              {drawerOpen && (
-                <motion.button
-                  key="close-x"
-                  initial={{ opacity: 0, rotate: -45 }}
-                  animate={{ opacity: 1, rotate: 0 }}
-                  exit={{ opacity: 0, rotate: -45 }}
-                  transition={{ duration: 0.15 }}
-                  onClick={() => setDrawerOpen(false)}
-                  aria-label="Close menu"
-                  className="absolute right-4 top-3.5 z-50
-                    flex items-center justify-center w-8 h-8
-                    text-neutral-700 hover:text-neutral-900 transition-colors"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
-                </motion.button>
-              )}
-            </AnimatePresence>
+            {/* Spacer to keep brand centered */}
+            <div className="w-8" />
           </div>
         </header>
 
         {/* Desktop topbar */}
-        <header className="hidden lg:flex bg-white border-b border-neutral-100
-          sticky top-0 z-20">
+        <header className="hidden lg:flex bg-white border-b border-neutral-100 sticky top-0 z-20">
           <div className="w-full px-8 h-14 flex items-center justify-between">
             <p className="text-xs uppercase tracking-widest text-neutral-400">
               {currentLabel}
@@ -362,8 +342,8 @@ export function AdminShell({
         <main className="flex-1 px-4 lg:px-8 py-6 lg:py-8">{children}</main>
       </div>
 
-      {/* Radial arc mobile menu */}
-      <RadialMenu
+      {/* Mobile menu — stacked pills */}
+      <MobileMenu
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         email={email}

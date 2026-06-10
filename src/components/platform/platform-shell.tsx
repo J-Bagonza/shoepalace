@@ -14,25 +14,7 @@ const NAV = [
   { href: "/", label: "Exit Platform", number: "05", isExit: true },
 ];
 
-function getArcPositions(count: number) {
-  // Keep angles strictly between -90° and +90° so cos is always positive,
-  // meaning every pill has a positive (leftward) x offset from the right-edge anchor.
-  const startAngle = -72;
-  const endAngle = 72;
-  const radius = 165;
-
-  return Array.from({ length: count }, (_, i) => {
-    const t = count === 1 ? 0.5 : i / (count - 1);
-    const angleDeg = startAngle + t * (endAngle - startAngle);
-    const angleRad = (angleDeg * Math.PI) / 180;
-    return {
-      x: Math.cos(angleRad) * radius,
-      y: Math.sin(angleRad) * radius,
-    };
-  });
-}
-
-function RadialMenu({
+function MobileMenu({
   open,
   onClose,
 }: {
@@ -40,16 +22,19 @@ function RadialMenu({
   onClose: () => void;
 }) {
   const pathname = usePathname();
-  const positions = getArcPositions(NAV.length);
 
+  // close on route change
   useEffect(() => {
     onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
+  // lock body scroll while open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   return (
@@ -62,24 +47,23 @@ function RadialMenu({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.2 }}
             onClick={onClose}
             className="fixed inset-0 z-30 md:hidden"
-            style={{ background: "rgba(0,0,0,0.22)" }}
+            style={{ background: "rgba(0,0,0,0.5)" }}
           />
 
-          {/* Anchor pinned to right-center */}
-          <div
-            className="fixed right-0 z-40 md:hidden pointer-events-none"
-            style={{
-              top: "50%",
-              transform: "translateY(-50%)",
-              width: 0,
-              height: 0,
-            }}
+          {/* Pills container — centered vertically, full width */}
+          <motion.div
+            key="pills"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-x-0 z-40 md:hidden flex flex-col items-center justify-center gap-3"
+            style={{ top: "50%", transform: "translateY(-50%)" }}
           >
             {NAV.map((link, i) => {
-              const { x, y } = positions[i] ?? { x: 0, y: 0 };
               const isActive =
                 !link.isExit &&
                 (link.href === "/platform"
@@ -89,30 +73,18 @@ function RadialMenu({
               return (
                 <motion.div
                   key={link.href}
-                  initial={{ x: 120, y, opacity: 0, scale: 0.7 }}
-                  animate={{ x, y, opacity: 1, scale: 1 }}
-                  exit={{ x: 120, y, opacity: 0, scale: 0.7 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 320,
-                    damping: 28,
-                    delay: i * 0.06,
-                    opacity: { duration: 0.18 },
-                  }}
-                  style={{
-                    position: "absolute",
-                    left: -60,
-                    top: -18,
-                    pointerEvents: "auto",
-                  }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ delay: i * 0.05, duration: 0.18 }}
                 >
                   <Link
                     href={link.href}
                     onClick={onClose}
                     className={clsx(
                       "flex items-center justify-center",
-                      "h-9 px-5 rounded-full",
-                      "text-[10px] uppercase tracking-[0.12em] font-medium",
+                      "h-10 px-8 rounded-full",
+                      "text-[11px] uppercase tracking-[0.14em] font-medium",
                       "transition-colors duration-150 whitespace-nowrap shadow-sm",
                       link.isExit
                         ? "bg-neutral-700 text-white/50 border border-white/10 hover:bg-neutral-600 hover:text-white/70"
@@ -120,14 +92,14 @@ function RadialMenu({
                         ? "bg-white text-neutral-900"
                         : "bg-neutral-800 text-white/70 border border-white/10 hover:bg-neutral-700 hover:text-white",
                     )}
-                    style={{ minWidth: 110 }}
+                    style={{ minWidth: 160 }}
                   >
                     {link.label}
                   </Link>
                 </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </>
       )}
     </AnimatePresence>
@@ -155,8 +127,7 @@ export function PlatformShell({
     <div className="min-h-screen bg-neutral-50">
       {/* Top bar */}
       <header className="bg-neutral-900 text-white sticky top-0 z-30">
-        <div className="mx-auto max-w-7xl px-4 lg:px-8 h-14 flex
-          items-center justify-between">
+        <div className="mx-auto max-w-7xl px-4 lg:px-8 h-14 flex items-center justify-between">
 
           {/* Left: brand + current page */}
           <div className="flex items-center gap-3">
@@ -164,8 +135,7 @@ export function PlatformShell({
               ShoePalace
             </span>
             <span className="text-white/20 text-sm">/</span>
-            <span className="text-xs uppercase tracking-widest
-              text-white/60 hidden sm:block">
+            <span className="text-xs uppercase tracking-widest text-white/60 hidden sm:block">
               {currentPage}
             </span>
           </div>
@@ -199,8 +169,7 @@ export function PlatformShell({
           <div className="flex items-center gap-4">
             <Link
               href="/"
-              className="hidden md:block text-xs uppercase tracking-widest
-                text-white/40 hover:text-white transition-colors"
+              className="hidden md:block text-xs uppercase tracking-widest text-white/40 hover:text-white transition-colors"
             >
               Exit
             </Link>
@@ -208,20 +177,29 @@ export function PlatformShell({
             {/* Hamburger / X — mobile only */}
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex md:hidden flex-col gap-1.5 p-1"
+              className="flex md:hidden items-center justify-center w-8 h-8 -mr-1"
               aria-label={menuOpen ? "Close menu" : "Open menu"}
             >
               <AnimatePresence mode="wait">
                 {menuOpen ? (
+                  // X icon in red when menu is open
                   <motion.svg
                     key="x"
                     initial={{ opacity: 0, rotate: -45 }}
                     animate={{ opacity: 1, rotate: 0 }}
                     exit={{ opacity: 0, rotate: 45 }}
                     transition={{ duration: 0.15 }}
-                    width="18" height="18" viewBox="0 0 18 18" fill="none"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
                   >
-                    <path d="M2 2L16 16M16 2L2 16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path
+                      d="M2 2L16 16M16 2L2 16"
+                      stroke="#E8001D"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
                   </motion.svg>
                 ) : (
                   <motion.div
@@ -243,11 +221,8 @@ export function PlatformShell({
         </div>
       </header>
 
-      {/* Radial arc mobile menu */}
-      <RadialMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-      />
+      {/* Mobile menu — stacked pills */}
+      <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       {/* Page content */}
       <main className="mx-auto max-w-7xl px-4 lg:px-8 py-6 lg:py-10">
