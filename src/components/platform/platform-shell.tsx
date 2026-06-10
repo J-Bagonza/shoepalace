@@ -13,7 +13,23 @@ const NAV = [
   { href: "/platform/ads", label: "Ads", number: "04" },
 ];
 
-function FloatingMenu({
+function getArcPositions(count: number) {
+  const startAngle = -110;
+  const endAngle = 110;
+  const radius = 150;
+
+  return Array.from({ length: count }, (_, i) => {
+    const t = count === 1 ? 0.5 : i / (count - 1);
+    const angleDeg = startAngle + t * (endAngle - startAngle);
+    const angleRad = (angleDeg * Math.PI) / 180;
+    return {
+      x: Math.cos(angleRad) * radius,
+      y: Math.sin(angleRad) * radius,
+    };
+  });
+}
+
+function RadialMenu({
   open,
   onClose,
 }: {
@@ -21,20 +37,15 @@ function FloatingMenu({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const positions = getArcPositions(NAV.length);
 
-  // Close on route change
   useEffect(() => {
     onClose();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // Prevent body scroll when open
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
@@ -42,132 +53,94 @@ function FloatingMenu({
     <AnimatePresence>
       {open && (
         <>
-          {/* Backdrop — very subtle, no heavy overlay */}
+          {/* Backdrop */}
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.25 }}
             onClick={onClose}
-            className="fixed inset-0 z-40"
-            style={{
-              background:
-                "linear-gradient(to left, rgba(0,0,0,0.15) 0%, transparent 60%)",
-            }}
+            className="fixed inset-0 z-30 md:hidden"
+            style={{ background: "rgba(0,0,0,0.22)" }}
           />
 
-          {/* Menu panel — slides in from right */}
-          <motion.nav
-            key="menu"
-            initial={{ x: "100%", opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: "100%", opacity: 0 }}
-            transition={{
-              type: "spring",
-              stiffness: 300,
-              damping: 35,
-              opacity: { duration: 0.2 },
-            }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-72
-              flex flex-col justify-between px-8 py-10"
+          {/* Anchor pinned to right-center */}
+          <div
+            className="fixed right-0 z-40 md:hidden pointer-events-none"
             style={{
-              background: "transparent",
-              // Frosted glass effect — looks premium on all backgrounds
-              backdropFilter: "blur(0px)",
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: 0,
+              height: 0,
             }}
           >
-            {/* Close button */}
-            <div className="flex justify-end">
-              <button
-                onClick={onClose}
-                className="flex flex-col gap-1.5 p-1 group"
-                aria-label="Close menu"
-              >
-                <motion.span
-                  animate={{ rotate: 45, y: 6 }}
-                  className="block h-px w-6 bg-neutral-900 origin-center"
-                />
-                <motion.span
-                  animate={{ opacity: 0 }}
-                  className="block h-px w-6 bg-neutral-900"
-                />
-                <motion.span
-                  animate={{ rotate: -45, y: -6 }}
-                  className="block h-px w-6 bg-neutral-900 origin-center"
-                />
-              </button>
-            </div>
+            {NAV.map((link, i) => {
+              const { x, y } = positions[i] ?? { x: 0, y: 0 };
+              const isActive =
+                link.href === "/platform"
+                  ? pathname === "/platform"
+                  : pathname.startsWith(link.href);
 
-            {/* Nav links — large, spaced, floating feel */}
-            <div className="flex flex-col gap-2">
-              {NAV.map((link, i) => {
-                const isActive =
-                  link.href === "/platform"
-                    ? pathname === "/platform"
-                    : pathname.startsWith(link.href);
-
-                return (
-                  <motion.div
-                    key={link.href}
-                    initial={{ opacity: 0, x: 24 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{
-                      delay: 0.05 + i * 0.06,
-                      duration: 0.3,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
+              return (
+                <motion.div
+                  key={link.href}
+                  initial={{ x: 120, y, opacity: 0, scale: 0.7 }}
+                  animate={{ x, y, opacity: 1, scale: 1 }}
+                  exit={{ x: 120, y, opacity: 0, scale: 0.7 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 320,
+                    damping: 28,
+                    delay: i * 0.06,
+                    opacity: { duration: 0.18 },
+                  }}
+                  style={{
+                    position: "absolute",
+                    left: -60,
+                    top: -18,
+                    pointerEvents: "auto",
+                  }}
+                >
+                  <Link
+                    href={link.href}
+                    onClick={onClose}
+                    className={clsx(
+                      "flex items-center justify-center",
+                      "h-9 px-5 rounded-full",
+                      "text-[10px] uppercase tracking-[0.12em] font-medium",
+                      "transition-colors duration-150 whitespace-nowrap shadow-sm",
+                      isActive
+                        ? "bg-white text-neutral-900"
+                        : "bg-neutral-800 text-white/70 border border-white/10 hover:bg-neutral-700 hover:text-white",
+                    )}
+                    style={{ minWidth: 110 }}
                   >
-                    <Link
-                      href={link.href}
-                      className={clsx(
-                        "group flex items-baseline gap-4 py-3",
-                        "transition-all duration-200",
-                      )}
-                    >
-                      <span
-                        className={clsx(
-                          "text-[10px] font-mono transition-colors duration-200",
-                          isActive
-                            ? "text-neutral-400"
-                            : "text-neutral-300 group-hover:text-neutral-400",
-                        )}
-                      >
-                        {link.number}
-                      </span>
-                      <span
-                        className={clsx(
-                          "font-bebas tracking-wide transition-all duration-200",
-                          isActive
-                            ? "text-5xl text-neutral-900"
-                            : "text-4xl text-neutral-400 group-hover:text-5xl group-hover:text-neutral-800",
-                        )}
-                      >
-                        {link.label}
-                      </span>
-                    </Link>
-                  </motion.div>
-                );
-              })}
-            </div>
+                    {link.label}
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
 
-            {/* Bottom — exit link */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.35 }}
-              className="flex flex-col gap-4"
+          {/* Exit link — bottom right */}
+          <motion.div
+            key="footer"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ delay: 0.28, duration: 0.2 }}
+            className="fixed bottom-6 right-4 z-40 md:hidden"
+          >
+            <Link
+              href="/"
+              onClick={onClose}
+              className="text-[10px] uppercase tracking-widest text-white/50
+                hover:text-white transition-colors"
             >
-              <div className="h-px bg-neutral-200" />
-              <Link
-                href="/"
-                className="text-xs uppercase tracking-widest text-neutral-400
-                  hover:text-neutral-900 transition-colors"
-              >
-                ← Exit Platform
-              </Link>
-            </motion.div>
-          </motion.nav>
+              ← Exit Platform
+            </Link>
+          </motion.div>
         </>
       )}
     </AnimatePresence>
@@ -233,7 +206,7 @@ export function PlatformShell({
             })}
           </nav>
 
-          {/* Right: exit (desktop) + hamburger (mobile) */}
+          {/* Right: exit (desktop) + hamburger/close (mobile) */}
           <div className="flex items-center gap-4">
             <Link
               href="/"
@@ -243,22 +216,46 @@ export function PlatformShell({
               Exit
             </Link>
 
-            {/* Hamburger — mobile only */}
+            {/* Hamburger / X — mobile only */}
             <button
-              onClick={() => setMenuOpen(true)}
+              onClick={() => setMenuOpen((v) => !v)}
               className="flex md:hidden flex-col gap-1.5 p-1"
-              aria-label="Open menu"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
             >
-              <span className="block h-px w-5 bg-white" />
-              <span className="block h-px w-5 bg-white" />
-              <span className="block h-px w-3 bg-white" />
+              <AnimatePresence mode="wait">
+                {menuOpen ? (
+                  <motion.svg
+                    key="x"
+                    initial={{ opacity: 0, rotate: -45 }}
+                    animate={{ opacity: 1, rotate: 0 }}
+                    exit={{ opacity: 0, rotate: 45 }}
+                    transition={{ duration: 0.15 }}
+                    width="18" height="18" viewBox="0 0 18 18" fill="none"
+                  >
+                    <path d="M2 2L16 16M16 2L2 16" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  </motion.svg>
+                ) : (
+                  <motion.div
+                    key="burger"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex flex-col gap-1.5"
+                  >
+                    <span className="block h-px w-5 bg-white" />
+                    <span className="block h-px w-5 bg-white" />
+                    <span className="block h-px w-3 bg-white" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Floating mobile menu */}
-      <FloatingMenu
+      {/* Radial arc mobile menu */}
+      <RadialMenu
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
       />

@@ -25,6 +25,31 @@ const NAV_GROUPS = [
   },
 ];
 
+// Flat list of all nav links for the radial menu
+const ALL_NAV_LINKS = NAV_GROUPS.flatMap((g) => g.links);
+
+// Compute arc positions along a right-anchored semicircle.
+// The arc originates from the right edge and fans leftward.
+// Returns { x, y } offsets from the right-center anchor point.
+function getArcPositions(count: number) {
+  // Arc spans from ~-130deg to +130deg (right side of a circle, opening left)
+  const startAngle = -130;
+  const endAngle = 130;
+  const radius = 160; // px — controls how wide the fan spreads
+
+  return Array.from({ length: count }, (_, i) => {
+    const t = count === 1 ? 0.5 : i / (count - 1);
+    const angleDeg = startAngle + t * (endAngle - startAngle);
+    const angleRad = (angleDeg * Math.PI) / 180;
+    // cos gives horizontal offset (negative = left from anchor)
+    // sin gives vertical offset
+    return {
+      x: Math.cos(angleRad) * radius,
+      y: Math.sin(angleRad) * radius,
+    };
+  });
+}
+
 function NavLink({
   href,
   label,
@@ -65,7 +90,6 @@ function Sidebar({
 }) {
   return (
     <div className="flex flex-col h-full">
-      {/* Brand */}
       <div className="px-4 py-5 border-b border-neutral-100">
         <Link
           href="/admin"
@@ -75,18 +99,15 @@ function Sidebar({
         >
           ShoePalace
         </Link>
-        <p className="text-[10px] text-neutral-400 uppercase tracking-widest
-          mt-0.5">
+        <p className="text-[10px] text-neutral-400 uppercase tracking-widest mt-0.5">
           Admin Dashboard
         </p>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto flex flex-col gap-6">
         {NAV_GROUPS.map((group) => (
           <div key={group.label} className="flex flex-col gap-1">
-            <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-300
-              px-3 mb-1">
+            <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-300 px-3 mb-1">
               {group.label}
             </p>
             {group.links.map((link) => (
@@ -102,11 +123,8 @@ function Sidebar({
         ))}
       </nav>
 
-      {/* Footer */}
       <div className="px-4 py-4 border-t border-neutral-100">
-        <p className="text-[10px] text-neutral-400 truncate mb-3">
-          {email}
-        </p>
+        <p className="text-[10px] text-neutral-400 truncate mb-3">{email}</p>
         <Link
           href="/"
           onClick={onClose}
@@ -120,6 +138,135 @@ function Sidebar({
   );
 }
 
+// Radial arc mobile menu — pills fan out from the right edge
+function RadialMenu({
+  open,
+  onClose,
+  email,
+}: {
+  open: boolean;
+  onClose: () => void;
+  email: string;
+}) {
+  const pathname = usePathname();
+  const positions = getArcPositions(ALL_NAV_LINKS.length);
+
+  // Close on route change
+  useEffect(() => {
+    onClose();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={onClose}
+            className="fixed inset-0 z-30 lg:hidden"
+            style={{ background: "rgba(0,0,0,0.18)" }}
+          />
+
+          {/* Invisible anchor pinned to right-center of screen.
+              All pills are positioned relative to this. */}
+          <div
+            className="fixed right-0 z-40 lg:hidden pointer-events-none"
+            style={{
+              top: "50%",
+              transform: "translateY(-50%)",
+              width: 0,
+              height: 0,
+            }}
+          >
+            {ALL_NAV_LINKS.map((link, i) => {
+              const { x, y } = positions[i] ?? { x: 0, y: 0 };
+              const isActive = link.exact
+                ? pathname === link.href
+                : pathname.startsWith(link.href);
+
+              return (
+                <motion.div
+                  key={link.href}
+                  initial={{ x: 120, y, opacity: 0, scale: 0.7 }}
+                  animate={{ x, y, opacity: 1, scale: 1 }}
+                  exit={{ x: 120, y, opacity: 0, scale: 0.7 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 320,
+                    damping: 28,
+                    delay: i * 0.055,
+                    opacity: { duration: 0.18 },
+                  }}
+                  style={{
+                    position: "absolute",
+                    // Pill is 120px wide — shift left by half so it's centered on the arc point
+                    left: -60,
+                    top: -18,
+                    pointerEvents: "auto",
+                  }}
+                >
+                  <Link
+                    href={link.href}
+                    onClick={onClose}
+                    className={clsx(
+                      "flex items-center justify-center",
+                      "h-9 px-5 rounded-full",
+                      "text-[10px] uppercase tracking-[0.12em] font-medium",
+                      "transition-colors duration-150 whitespace-nowrap",
+                      "shadow-sm",
+                      isActive
+                        ? "bg-neutral-900 text-white"
+                        : "bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-900 hover:text-neutral-900",
+                    )}
+                    style={{ minWidth: 110 }}
+                  >
+                    {link.label}
+                  </Link>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Close button + email footer — bottom-right */}
+          <motion.div
+            key="footer"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ delay: 0.25, duration: 0.2 }}
+            className="fixed bottom-6 right-4 z-40 lg:hidden
+              flex flex-col items-end gap-3"
+          >
+            <p className="text-[10px] text-neutral-400 tracking-widest truncate max-w-[180px]">
+              {email}
+            </p>
+            <Link
+              href="/"
+              onClick={onClose}
+              className="text-[10px] uppercase tracking-widest text-neutral-400
+                hover:text-neutral-900 transition-colors"
+            >
+              ← Back to Store
+            </Link>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 export function AdminShell({
   email,
   children,
@@ -130,21 +277,6 @@ export function AdminShell({
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Close drawer on navigation
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [pathname]);
-
-  // Prevent body scroll when drawer open
-  useEffect(() => {
-    if (drawerOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [drawerOpen]);
-
   const currentLabel =
     NAV_GROUPS.flatMap((g) => g.links).find((l) =>
       l.exact ? pathname === l.href : pathname.startsWith(l.href),
@@ -153,13 +285,13 @@ export function AdminShell({
   return (
     <div className="min-h-screen bg-neutral-50 flex">
 
-      {/* ── Desktop sidebar (hidden on mobile) ── */}
+      {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-56 lg:shrink-0
         bg-white border-r border-neutral-100 sticky top-0 h-screen">
         <Sidebar email={email} />
       </aside>
 
-      {/* ── Main area ── */}
+      {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
 
         {/* Mobile topbar */}
@@ -177,8 +309,7 @@ export function AdminShell({
                 <span className="block h-px w-5 bg-neutral-900" />
                 <span className="block h-px w-3.5 bg-neutral-900" />
               </button>
-              <span className="text-xs uppercase tracking-widest
-                text-neutral-500">
+              <span className="text-xs uppercase tracking-widest text-neutral-500">
                 {currentLabel}
               </span>
             </div>
@@ -189,6 +320,28 @@ export function AdminShell({
             >
               ShoePalace
             </Link>
+
+            {/* Close X visible when menu is open */}
+            <AnimatePresence>
+              {drawerOpen && (
+                <motion.button
+                  key="close-x"
+                  initial={{ opacity: 0, rotate: -45 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: -45 }}
+                  transition={{ duration: 0.15 }}
+                  onClick={() => setDrawerOpen(false)}
+                  aria-label="Close menu"
+                  className="absolute right-4 top-3.5 z-50
+                    flex items-center justify-center w-8 h-8
+                    text-neutral-700 hover:text-neutral-900 transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
         </header>
 
@@ -206,70 +359,15 @@ export function AdminShell({
         </header>
 
         {/* Page content */}
-        <main className="flex-1 px-4 lg:px-8 py-6 lg:py-8">
-          {children}
-        </main>
+        <main className="flex-1 px-4 lg:px-8 py-6 lg:py-8">{children}</main>
       </div>
 
-      {/* ── Mobile drawer overlay ── */}
-      <AnimatePresence>
-        {drawerOpen && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              onClick={() => setDrawerOpen(false)}
-              className="fixed inset-0 bg-black/20 z-30 lg:hidden"
-            />
-
-            {/* Drawer — slides from left */}
-            <motion.div
-              key="drawer"
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 35,
-              }}
-              className="fixed top-0 left-0 bottom-0 z-40 w-64 bg-white
-                shadow-xl lg:hidden"
-            >
-              {/* Close button inside drawer */}
-              <button
-                onClick={() => setDrawerOpen(false)}
-                className="absolute top-4 right-4 p-1"
-                aria-label="Close menu"
-              >
-                <div className="flex flex-col gap-1.5">
-                  <motion.span
-                    animate={{ rotate: 45, y: 6 }}
-                    className="block h-px w-5 bg-neutral-900 origin-center"
-                  />
-                  <motion.span
-                    animate={{ opacity: 0 }}
-                    className="block h-px w-5 bg-neutral-900"
-                  />
-                  <motion.span
-                    animate={{ rotate: -45, y: -6 }}
-                    className="block h-px w-5 bg-neutral-900 origin-center"
-                  />
-                </div>
-              </button>
-
-              <Sidebar
-                email={email}
-                onClose={() => setDrawerOpen(false)}
-              />
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Radial arc mobile menu */}
+      <RadialMenu
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        email={email}
+      />
     </div>
   );
 }
