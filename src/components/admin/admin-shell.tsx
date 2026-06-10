@@ -6,7 +6,14 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx } from "clsx";
 
-const NAV_GROUPS = [
+type NavItem = {
+  href: string;
+  label: string;
+  exact?: boolean;
+  isBack?: boolean;
+};
+
+const NAV_GROUPS: { label: string; links: NavItem[] }[] = [
   {
     label: "Store",
     links: [
@@ -25,24 +32,23 @@ const NAV_GROUPS = [
   },
 ];
 
-// Flat list of all nav links for the radial menu
-const ALL_NAV_LINKS = NAV_GROUPS.flatMap((g) => g.links);
+// Flat nav links for the radial menu, with "Back to Store" appended as the 7th pill
+const ALL_NAV_LINKS: NavItem[] = [
+  ...NAV_GROUPS.flatMap((g) => g.links),
+  { href: "/", label: "Back to Store", isBack: true },
+];
 
-// Compute arc positions along a right-anchored semicircle.
-// The arc originates from the right edge and fans leftward.
-// Returns { x, y } offsets from the right-center anchor point.
+// Keep angles strictly between -90° and +90° so cos is always positive,
+// meaning every pill has a positive (leftward) x offset from the right-edge anchor.
 function getArcPositions(count: number) {
-  // Arc spans from ~-130deg to +130deg (right side of a circle, opening left)
-  const startAngle = -130;
-  const endAngle = 130;
-  const radius = 160; // px — controls how wide the fan spreads
+  const startAngle = -75;
+  const endAngle = 75;
+  const radius = 165;
 
   return Array.from({ length: count }, (_, i) => {
     const t = count === 1 ? 0.5 : i / (count - 1);
     const angleDeg = startAngle + t * (endAngle - startAngle);
     const angleRad = (angleDeg * Math.PI) / 180;
-    // cos gives horizontal offset (negative = left from anchor)
-    // sin gives vertical offset
     return {
       x: Math.cos(angleRad) * radius,
       y: Math.sin(angleRad) * radius,
@@ -192,13 +198,15 @@ function RadialMenu({
           >
             {ALL_NAV_LINKS.map((link, i) => {
               const { x, y } = positions[i] ?? { x: 0, y: 0 };
-              const isActive = link.exact
-                ? pathname === link.href
-                : pathname.startsWith(link.href);
+              const isActive =
+                !link.isBack &&
+                (link.exact
+                  ? pathname === link.href
+                  : pathname.startsWith(link.href));
 
               return (
                 <motion.div
-                  key={link.href}
+                  key={link.href + i}
                   initial={{ x: 120, y, opacity: 0, scale: 0.7 }}
                   animate={{ x, y, opacity: 1, scale: 1 }}
                   exit={{ x: 120, y, opacity: 0, scale: 0.7 }}
@@ -211,7 +219,6 @@ function RadialMenu({
                   }}
                   style={{
                     position: "absolute",
-                    // Pill is 120px wide — shift left by half so it's centered on the arc point
                     left: -60,
                     top: -18,
                     pointerEvents: "auto",
@@ -226,7 +233,9 @@ function RadialMenu({
                       "text-[10px] uppercase tracking-[0.12em] font-medium",
                       "transition-colors duration-150 whitespace-nowrap",
                       "shadow-sm",
-                      isActive
+                      link.isBack
+                        ? "bg-neutral-100 text-neutral-500 border border-neutral-200 hover:border-neutral-400 hover:text-neutral-700"
+                        : isActive
                         ? "bg-neutral-900 text-white"
                         : "bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-900 hover:text-neutral-900",
                     )}
@@ -239,27 +248,18 @@ function RadialMenu({
             })}
           </div>
 
-          {/* Close button + email footer — bottom-right */}
+          {/* Email footer — bottom-right */}
           <motion.div
             key="footer"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
             transition={{ delay: 0.25, duration: 0.2 }}
-            className="fixed bottom-6 right-4 z-40 lg:hidden
-              flex flex-col items-end gap-3"
+            className="fixed bottom-6 right-4 z-40 lg:hidden"
           >
             <p className="text-[10px] text-neutral-400 tracking-widest truncate max-w-[180px]">
               {email}
             </p>
-            <Link
-              href="/"
-              onClick={onClose}
-              className="text-[10px] uppercase tracking-widest text-neutral-400
-                hover:text-neutral-900 transition-colors"
-            >
-              ← Back to Store
-            </Link>
           </motion.div>
         </>
       )}

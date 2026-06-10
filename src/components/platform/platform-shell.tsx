@@ -11,12 +11,15 @@ const NAV = [
   { href: "/platform/tenants", label: "Stores", number: "02" },
   { href: "/platform/requests", label: "Requests", number: "03" },
   { href: "/platform/ads", label: "Ads", number: "04" },
+  { href: "/", label: "Exit Platform", number: "05", isExit: true },
 ];
 
 function getArcPositions(count: number) {
-  const startAngle = -110;
-  const endAngle = 110;
-  const radius = 150;
+  // Keep angles strictly between -90° and +90° so cos is always positive,
+  // meaning every pill has a positive (leftward) x offset from the right-edge anchor.
+  const startAngle = -72;
+  const endAngle = 72;
+  const radius = 165;
 
   return Array.from({ length: count }, (_, i) => {
     const t = count === 1 ? 0.5 : i / (count - 1);
@@ -78,9 +81,10 @@ function RadialMenu({
             {NAV.map((link, i) => {
               const { x, y } = positions[i] ?? { x: 0, y: 0 };
               const isActive =
-                link.href === "/platform"
+                !link.isExit &&
+                (link.href === "/platform"
                   ? pathname === "/platform"
-                  : pathname.startsWith(link.href);
+                  : pathname.startsWith(link.href));
 
               return (
                 <motion.div
@@ -110,7 +114,9 @@ function RadialMenu({
                       "h-9 px-5 rounded-full",
                       "text-[10px] uppercase tracking-[0.12em] font-medium",
                       "transition-colors duration-150 whitespace-nowrap shadow-sm",
-                      isActive
+                      link.isExit
+                        ? "bg-neutral-700 text-white/50 border border-white/10 hover:bg-neutral-600 hover:text-white/70"
+                        : isActive
                         ? "bg-white text-neutral-900"
                         : "bg-neutral-800 text-white/70 border border-white/10 hover:bg-neutral-700 hover:text-white",
                     )}
@@ -122,25 +128,6 @@ function RadialMenu({
               );
             })}
           </div>
-
-          {/* Exit link — bottom right */}
-          <motion.div
-            key="footer"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ delay: 0.28, duration: 0.2 }}
-            className="fixed bottom-6 right-4 z-40 md:hidden"
-          >
-            <Link
-              href="/"
-              onClick={onClose}
-              className="text-[10px] uppercase tracking-widest text-white/50
-                hover:text-white transition-colors"
-            >
-              ← Exit Platform
-            </Link>
-          </motion.div>
         </>
       )}
     </AnimatePresence>
@@ -157,7 +144,9 @@ export function PlatformShell({
 
   const currentPage =
     NAV.find((n) =>
-      n.href === "/platform"
+      n.isExit
+        ? false
+        : n.href === "/platform"
         ? pathname === "/platform"
         : pathname.startsWith(n.href),
     )?.label ?? "Platform";
@@ -183,7 +172,7 @@ export function PlatformShell({
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-1">
-            {NAV.map((link) => {
+            {NAV.filter((l) => !l.isExit).map((link) => {
               const isActive =
                 link.href === "/platform"
                   ? pathname === "/platform"
