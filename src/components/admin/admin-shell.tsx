@@ -32,7 +32,6 @@ const NAV_GROUPS: { label: string; links: NavItem[] }[] = [
   },
 ];
 
-// All nav links flat, with "Back to Store" appended at the end
 const ALL_NAV_LINKS: NavItem[] = [
   ...NAV_GROUPS.flatMap((g) => g.links),
   { href: "/", label: "Back to Store", isBack: true },
@@ -126,7 +125,13 @@ function Sidebar({
   );
 }
 
-// Stacked pill mobile menu — replaces the broken radial arc
+/* ─────────────────────────────────────────────
+   Bottom-sheet mobile menu
+   • Slides up from bottom, half-screen height
+   • Rounded top-left / top-right corners
+   • White bg + subtle red grid overlay
+   • Section labels + pill nav links
+───────────────────────────────────────────── */
 function MobileMenu({
   open,
   onClose,
@@ -138,18 +143,14 @@ function MobileMenu({
 }) {
   const pathname = usePathname();
 
-  // close on route change
   useEffect(() => {
     onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // lock body scroll while open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   return (
@@ -162,72 +163,150 @@ function MobileMenu({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.22 }}
             onClick={onClose}
             className="fixed inset-0 z-30 lg:hidden"
-            style={{ background: "rgba(0,0,0,0.35)" }}
+            style={{ background: "rgba(0,0,0,0.45)" }}
           />
 
-          {/* Pills — centered vertically, full width */}
+          {/* Bottom sheet */}
           <motion.div
-            key="pills"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 z-40 lg:hidden flex flex-col items-center justify-center gap-3"
-            style={{ top: "50%", transform: "translateY(-50%)" }}
+            key="sheet"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 340, damping: 34, mass: 0.9 }}
+            className="fixed bottom-0 inset-x-0 z-40 lg:hidden"
+            style={{ height: "52vh", minHeight: 340 }}
           >
-            {ALL_NAV_LINKS.map((link, i) => {
-              const isActive =
-                !link.isBack &&
-                (link.exact
-                  ? pathname === link.href
-                  : pathname.startsWith(link.href));
-
-              return (
-                <motion.div
-                  key={link.href + i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ delay: i * 0.045, duration: 0.18 }}
-                >
-                  <Link
-                    href={link.href}
-                    onClick={onClose}
-                    className={clsx(
-                      "flex items-center justify-center",
-                      "h-10 px-8 rounded-full",
-                      "text-[11px] uppercase tracking-[0.14em] font-medium",
-                      "transition-colors duration-150 whitespace-nowrap shadow-sm",
-                      link.isBack
-                        ? "bg-neutral-100 text-neutral-500 border border-neutral-200 hover:border-neutral-400 hover:text-neutral-700"
-                        : isActive
-                        ? "bg-neutral-900 text-white"
-                        : "bg-white text-neutral-700 border border-neutral-200 hover:border-neutral-900 hover:text-neutral-900",
-                    )}
-                    style={{ minWidth: 160 }}
+            {/* Sheet surface */}
+            <div
+              className="relative w-full h-full overflow-hidden"
+              style={{ borderRadius: "18px 18px 0 0", background: "#fff" }}
+            >
+              {/* Red grid SVG overlay */}
+              <svg
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  pointerEvents: "none",
+                }}
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <defs>
+                  <pattern
+                    id="admin-grid"
+                    width="32"
+                    height="32"
+                    patternUnits="userSpaceOnUse"
                   >
-                    {link.label}
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+                    <path
+                      d="M 32 0 L 0 0 0 32"
+                      fill="none"
+                      stroke="#E8001D"
+                      strokeWidth="0.45"
+                      opacity="0.15"
+                    />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#admin-grid)" />
+              </svg>
 
-          {/* Email footer — bottom center */}
-          <motion.div
-            key="footer"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ delay: 0.3, duration: 0.2 }}
-            className="fixed bottom-6 inset-x-0 z-40 lg:hidden flex justify-center"
-          >
-            <p className="text-[10px] text-neutral-400 tracking-widest truncate max-w-[200px]">
-              {email}
-            </p>
+              {/* Drag handle */}
+              <div className="flex justify-center pt-3 pb-1 relative">
+                <div
+                  style={{
+                    width: 40,
+                    height: 4,
+                    borderRadius: 2,
+                    background: "#e0e0e0",
+                  }}
+                />
+              </div>
+
+              {/* Scrollable content */}
+              <div className="relative h-full overflow-y-auto pb-6">
+                {NAV_GROUPS.map((group, gi) => (
+                  <div key={group.label} className={gi === 0 ? "pt-2 px-5" : "pt-1 px-5"}>
+                    <p
+                      style={{
+                        fontSize: 9,
+                        letterSpacing: "0.2em",
+                        textTransform: "uppercase",
+                        color: "#bbb",
+                        marginBottom: 6,
+                        paddingLeft: 4,
+                      }}
+                    >
+                      {group.label}
+                    </p>
+                    <div className="flex flex-col gap-2 mb-4">
+                      {group.links.map((link, i) => {
+                        const isActive = link.exact
+                          ? pathname === link.href
+                          : pathname.startsWith(link.href);
+                        return (
+                          <motion.div
+                            key={link.href}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: gi * 0.06 + i * 0.04, duration: 0.18 }}
+                          >
+                            <Link
+                              href={link.href}
+                              onClick={onClose}
+                              className={clsx(
+                                "flex items-center justify-center h-10 rounded-full",
+                                "text-[11px] uppercase tracking-[0.13em] font-medium",
+                                "transition-colors duration-150",
+                                isActive
+                                  ? "bg-neutral-900 text-white"
+                                  : "bg-white text-neutral-600 border border-neutral-200 hover:border-neutral-800 hover:text-neutral-900",
+                              )}
+                            >
+                              {link.label}
+                            </Link>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Back to Store */}
+                <div className="px-5 pt-1 pb-2">
+                  <div
+                    style={{
+                      height: 1,
+                      background: "rgba(0,0,0,0.06)",
+                      marginBottom: 12,
+                    }}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.28, duration: 0.18 }}
+                  >
+                    <Link
+                      href="/"
+                      onClick={onClose}
+                      className="flex items-center justify-center h-10 rounded-full
+                        text-[11px] uppercase tracking-[0.13em] font-medium
+                        bg-red-50 text-[#E8001D] border border-red-100
+                        hover:bg-red-100 transition-colors duration-150"
+                    >
+                      ← Back to Store
+                    </Link>
+                  </motion.div>
+                  <p className="text-center text-[10px] text-neutral-300 tracking-widest mt-3 truncate">
+                    {email}
+                  </p>
+                </div>
+              </div>
+            </div>
           </motion.div>
         </>
       )}
@@ -266,7 +345,6 @@ export function AdminShell({
         <header className="lg:hidden bg-white border-b border-neutral-100 sticky top-0 z-20">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-3">
-              {/* Hamburger / X toggle */}
               <button
                 onClick={() => setDrawerOpen((v) => !v)}
                 className="flex items-center justify-center w-8 h-8 -ml-1"
@@ -321,7 +399,6 @@ export function AdminShell({
               ShoePalace
             </Link>
 
-            {/* Spacer to keep brand centered */}
             <div className="w-8" />
           </div>
         </header>
@@ -342,7 +419,7 @@ export function AdminShell({
         <main className="flex-1 px-4 lg:px-8 py-6 lg:py-8">{children}</main>
       </div>
 
-      {/* Mobile menu — stacked pills */}
+      {/* Mobile menu — bottom sheet */}
       <MobileMenu
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}

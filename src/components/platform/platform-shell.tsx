@@ -14,6 +14,13 @@ const NAV = [
   { href: "/", label: "Exit Platform", number: "05", isExit: true },
 ];
 
+/* ─────────────────────────────────────────────
+   Bottom-sheet mobile menu
+   • Slides up from bottom, half-screen height
+   • Rounded top-left / top-right corners
+   • Dark bg + subtle red grid overlay
+   • Numbered pill nav links
+───────────────────────────────────────────── */
 function MobileMenu({
   open,
   onClose,
@@ -23,18 +30,14 @@ function MobileMenu({
 }) {
   const pathname = usePathname();
 
-  // close on route change
   useEffect(() => {
     onClose();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
-  // lock body scroll while open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   return (
@@ -47,58 +50,140 @@ function MobileMenu({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.22 }}
             onClick={onClose}
             className="fixed inset-0 z-30 md:hidden"
-            style={{ background: "rgba(0,0,0,0.5)" }}
+            style={{ background: "rgba(0,0,0,0.6)" }}
           />
 
-          {/* Pills container — centered vertically, full width */}
+          {/* Bottom sheet */}
           <motion.div
-            key="pills"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 z-40 md:hidden flex flex-col items-center justify-center gap-3"
-            style={{ top: "50%", transform: "translateY(-50%)" }}
+            key="sheet"
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 340, damping: 34, mass: 0.9 }}
+            className="fixed bottom-0 inset-x-0 z-40 md:hidden"
+            style={{ height: "52vh", minHeight: 320 }}
           >
-            {NAV.map((link, i) => {
-              const isActive =
-                !link.isExit &&
-                (link.href === "/platform"
-                  ? pathname === "/platform"
-                  : pathname.startsWith(link.href));
+            {/* Sheet surface — dark */}
+            <div
+              className="relative w-full h-full overflow-hidden"
+              style={{ borderRadius: "18px 18px 0 0", background: "#171717" }}
+            >
+              {/* Red grid SVG overlay */}
+              <svg
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  pointerEvents: "none",
+                }}
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <defs>
+                  <pattern
+                    id="platform-grid"
+                    width="32"
+                    height="32"
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <path
+                      d="M 32 0 L 0 0 0 32"
+                      fill="none"
+                      stroke="#E8001D"
+                      strokeWidth="0.45"
+                      opacity="0.22"
+                    />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#platform-grid)" />
+              </svg>
 
-              return (
+              {/* Drag handle */}
+              <div className="flex justify-center pt-3 pb-1 relative">
+                <div
+                  style={{
+                    width: 40,
+                    height: 4,
+                    borderRadius: 2,
+                    background: "rgba(255,255,255,0.15)",
+                  }}
+                />
+              </div>
+
+              {/* Nav links */}
+              <div className="relative px-5 pt-3 flex flex-col gap-2.5 pb-4">
+                {NAV.filter((l) => !l.isExit).map((link, i) => {
+                  const isActive =
+                    link.href === "/platform"
+                      ? pathname === "/platform"
+                      : pathname.startsWith(link.href);
+
+                  return (
+                    <motion.div
+                      key={link.href}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05, duration: 0.18 }}
+                    >
+                      <Link
+                        href={link.href}
+                        onClick={onClose}
+                        className={clsx(
+                          "flex items-center gap-3 h-11 px-5 rounded-full",
+                          "text-[11px] uppercase tracking-[0.13em] font-medium",
+                          "transition-colors duration-150",
+                          isActive
+                            ? "bg-white text-neutral-900"
+                            : "bg-transparent text-white/60 border border-white/10 hover:bg-white/10 hover:text-white",
+                        )}
+                      >
+                        <span
+                          className={clsx(
+                            "text-[10px] tabular-nums",
+                            isActive ? "text-neutral-400" : "text-white/25",
+                          )}
+                        >
+                          {link.number}
+                        </span>
+                        {link.label}
+                      </Link>
+                    </motion.div>
+                  );
+                })}
+
+                {/* Divider */}
+                <div
+                  style={{
+                    height: 1,
+                    background: "rgba(255,255,255,0.07)",
+                    margin: "2px 0",
+                  }}
+                />
+
+                {/* Exit */}
                 <motion.div
-                  key={link.href}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ delay: i * 0.05, duration: 0.18 }}
+                  transition={{ delay: 0.24, duration: 0.18 }}
                 >
                   <Link
-                    href={link.href}
+                    href="/"
                     onClick={onClose}
-                    className={clsx(
-                      "flex items-center justify-center",
-                      "h-10 px-8 rounded-full",
-                      "text-[11px] uppercase tracking-[0.14em] font-medium",
-                      "transition-colors duration-150 whitespace-nowrap shadow-sm",
-                      link.isExit
-                        ? "bg-neutral-700 text-white/50 border border-white/10 hover:bg-neutral-600 hover:text-white/70"
-                        : isActive
-                        ? "bg-white text-neutral-900"
-                        : "bg-neutral-800 text-white/70 border border-white/10 hover:bg-neutral-700 hover:text-white",
-                    )}
-                    style={{ minWidth: 160 }}
+                    className="flex items-center gap-3 h-11 px-5 rounded-full
+                      text-[11px] uppercase tracking-[0.13em] font-medium
+                      bg-transparent text-white/25 border border-white/07
+                      hover:text-white/50 transition-colors duration-150"
                   >
-                    {link.label}
+                    <span className="text-[10px] tabular-nums text-white/15">05</span>
+                    Exit Platform
                   </Link>
                 </motion.div>
-              );
-            })}
+              </div>
+            </div>
           </motion.div>
         </>
       )}
@@ -182,7 +267,6 @@ export function PlatformShell({
             >
               <AnimatePresence mode="wait">
                 {menuOpen ? (
-                  // X icon in red when menu is open
                   <motion.svg
                     key="x"
                     initial={{ opacity: 0, rotate: -45 }}
@@ -221,7 +305,7 @@ export function PlatformShell({
         </div>
       </header>
 
-      {/* Mobile menu — stacked pills */}
+      {/* Mobile menu — bottom sheet */}
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       {/* Page content */}
