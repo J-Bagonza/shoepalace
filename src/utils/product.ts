@@ -19,12 +19,19 @@ export function getPrimaryImage(product: Product): {
 }
 
 /**
- * Formats price in GBP.
+ * Formats a price in the given currency (defaults to GBP).
  */
-export function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-GB", {
+const CURRENCY_LOCALES: Record<string, string> = {
+  GBP: "en-GB",
+  KES: "en-KE",
+  USD: "en-US",
+};
+
+export function formatPrice(price: number, currency: string = "GBP"): string {
+  const locale = CURRENCY_LOCALES[currency] ?? "en-GB";
+  return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: "GBP",
+    currency,
   }).format(price);
 }
 

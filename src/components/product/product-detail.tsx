@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAddToCart } from "@/hooks/use-add-to-cart";
 import { formatPrice, isInStock } from "@/utils/product";
+import { useCurrency } from "@/context/currency-context";
 import type { Product, ProductVariant } from "@/types/product";
 
 interface ProductDetailProps {
@@ -28,6 +29,7 @@ export function ProductDetail({
   const [addError, setAddError] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState(false);
   const { addToCart, loading } = useAddToCart();
+  const currency = useCurrency();
 
   const inStock = isInStock(product);
 
@@ -123,7 +125,7 @@ export function ProductDetail({
               </h1>
 
               <p className="text-2xl text-neutral-900">
-                {formatPrice(product.price)}
+                {formatPrice(product.price, currency)}
               </p>
             </div>
 

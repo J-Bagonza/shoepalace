@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { OrderStatusBadge } from "./order-status-badge";
 import { formatPrice } from "@/utils/product";
+import { useCurrency } from "@/context/currency-context";
 import type { Order, OrderStatus } from "@/types/order";
 
 const STATUS_STEPS: OrderStatus[] = [
@@ -96,6 +97,8 @@ interface OrderTrackingProps {
 }
 
 export function OrderTracking({ order }: OrderTrackingProps) {
+  const currency = useCurrency();
+
   return (
     <div className="flex flex-col gap-10">
       {/* Header */}
@@ -169,11 +172,11 @@ export function OrderTracking({ order }: OrderTrackingProps) {
                   </p>
                   <p className="text-xs text-neutral-500">
                     Qty: {item.quantity} ×{" "}
-                    {formatPrice(item.unit_price)}
+                    {formatPrice(item.unit_price, currency)}
                   </p>
                 </div>
                 <p className="text-sm text-neutral-900 shrink-0">
-                  {formatPrice(item.subtotal)}
+                  {formatPrice(item.subtotal, currency)}
                 </p>
               </div>
             ))}
@@ -184,16 +187,16 @@ export function OrderTracking({ order }: OrderTrackingProps) {
             gap-2">
             <div className="flex justify-between text-xs text-neutral-500">
               <span>Subtotal</span>
-              <span>{formatPrice(order.subtotal)}</span>
+              <span>{formatPrice(order.subtotal, currency)}</span>
             </div>
             <div className="flex justify-between text-xs text-neutral-500">
               <span>Shipping</span>
-              <span>{formatPrice(order.shipping_fee)}</span>
+              <span>{formatPrice(order.shipping_fee, currency)}</span>
             </div>
             <div className="flex justify-between text-sm font-medium
               text-neutral-900 pt-2 border-t border-neutral-100">
               <span>Total</span>
-              <span>{formatPrice(order.total)}</span>
+              <span>{formatPrice(order.total, currency)}</span>
             </div>
           </div>
         </div>

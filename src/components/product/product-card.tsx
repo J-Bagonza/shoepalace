@@ -15,6 +15,7 @@ import { formatPrice, getPrimaryImage, isInStock } from "@/utils/product";
 import { Badge } from "@/components/ui/badge";
 import { useAddToCart } from "@/hooks/use-add-to-cart";
 import { useCartItems, useCartActions } from "@/store/cart";
+import { useCurrency } from "@/context/currency-context";
 import type { Product } from "@/types/product";
 
 interface ProductCardProps {
@@ -40,6 +41,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
   const { addToCart, loading } = useAddToCart();
   const items = useCartItems();
   const { updateQuantity, removeItem } = useCartActions();
+  const currency = useCurrency();
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -140,7 +142,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
           }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          className="relative aspect-[3/4] overflow-hidden bg-[#F5F0E8]
+          className="relative aspect-[3/4] overflow-hidden bg-white
             will-change-transform"
         >
           {primaryImage ? (
@@ -152,7 +154,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               sizes="(max-width: 640px) 50vw,
                      (max-width: 1024px) 33vw,
                      25vw"
-              className={`object-cover transition-opacity duration-500
+              className={`object-contain transition-opacity duration-500
                 ${secondaryImage ? "group-hover:opacity-0" : ""}`}
             />
           ) : (
@@ -167,7 +169,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
               sizes="(max-width: 640px) 50vw,
                      (max-width: 1024px) 33vw,
                      25vw"
-              className="object-cover opacity-0 transition-opacity
+              className="object-contain opacity-0 transition-opacity
                 duration-500 group-hover:opacity-100"
             />
           )}
@@ -275,7 +277,7 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
             )}
           </div>
           <p className="text-sm text-neutral-900 shrink-0">
-            {formatPrice(product.price)}
+            {formatPrice(product.price, currency)}
           </p>
         </div>
 

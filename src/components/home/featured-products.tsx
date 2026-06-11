@@ -12,6 +12,7 @@ import {
   type Variants,
 } from "framer-motion";
 import { formatPrice } from "@/utils/product";
+import { useCurrency } from "@/context/currency-context";
 import { Badge } from "@/components/ui/badge";
 import type { Product } from "@/types/product";
 
@@ -38,7 +39,7 @@ const ITEM: Variants = {
   },
 };
 
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, currency }: { product: Product; currency: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -132,7 +133,7 @@ function ProductCard({ product }: { product: Product }) {
             </p>
           </div>
           <p className="text-sm text-neutral-900 shrink-0 ml-4">
-            {formatPrice(product.price)}
+            {formatPrice(product.price, currency)}
           </p>
         </div>
       </Link>
@@ -143,6 +144,7 @@ function ProductCard({ product }: { product: Product }) {
 export function FeaturedProducts({ products }: FeaturedProductsProps) {
   const ref = useRef<HTMLElement>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const currency = useCurrency();
 
   if (products.length === 0) return null;
 
@@ -191,7 +193,7 @@ export function FeaturedProducts({ products }: FeaturedProductsProps) {
         >
           {products.slice(0, 4).map((product) => (
             <div key={product.id} className="bg-white p-4 md:p-6">
-              <ProductCard product={product} />
+              <ProductCard product={product} currency={currency} />
             </div>
           ))}
         </motion.div>

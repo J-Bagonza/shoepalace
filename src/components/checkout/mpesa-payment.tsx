@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatPrice } from "@/utils/product";
+import { useCurrency } from "@/context/currency-context";
 
 interface MpesaPaymentProps {
   orderId: string;
@@ -29,6 +30,7 @@ export function MpesaPayment({
   defaultPhone = "",
 }: MpesaPaymentProps) {
   const router = useRouter();
+  const currency = useCurrency();
   const [phone, setPhone] = useState(defaultPhone);
   const [state, setState] = useState<PaymentState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +148,7 @@ export function MpesaPayment({
         <p className="text-sm text-neutral-500">
           Amount due:{" "}
           <span className="font-medium text-neutral-900">
-            {formatPrice(total)}
+            {formatPrice(total, currency)}
           </span>
         </p>
       </div>
@@ -199,7 +201,7 @@ export function MpesaPayment({
             <p className="text-xs text-neutral-500 leading-relaxed">
               Check your phone{phone ? ` (${phone})` : ""} and enter your
               M-Pesa PIN to confirm payment of{" "}
-              <span className="font-medium">{formatPrice(total)}</span>.
+              <span className="font-medium">{formatPrice(total, currency)}</span>.
             </p>
           </div>
           <button

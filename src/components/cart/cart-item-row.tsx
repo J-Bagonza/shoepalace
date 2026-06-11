@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useCartActions } from "@/store/cart";
 import { formatPrice } from "@/utils/product";
+import { useCurrency } from "@/context/currency-context";
 import type { CartItem } from "@/types/cart";
 
 interface CartItemRowProps {
@@ -12,6 +13,7 @@ interface CartItemRowProps {
 
 export function CartItemRow({ item }: CartItemRowProps) {
   const { removeItem, updateQuantity } = useCartActions();
+  const currency = useCurrency();
 
   return (
     <motion.div
@@ -46,7 +48,7 @@ export function CartItemRow({ item }: CartItemRowProps) {
           {item.size} / {item.color}
         </p>
         <p className="text-sm font-medium text-neutral-900">
-          {formatPrice(item.price)}
+          {formatPrice(item.price, currency)}
         </p>
 
         {/* Quantity controls */}

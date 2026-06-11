@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { useCartActions } from "@/store/cart";
 import { formatPrice } from "@/utils/product";
+import { useCurrency } from "@/context/currency-context";
 import Image from "next/image";
 
 const SHIPPING_FEE = 300;
@@ -20,6 +21,7 @@ export function CheckoutForm({ mpesaEnabled }: CheckoutFormProps) {
   const router = useRouter();
   const { items, subtotal } = useCart();
   const { clearCart } = useCartActions();
+  const currency = useCurrency();
 
   const [values, setValues] = useState({
     customer_name: "",
@@ -288,7 +290,7 @@ export function CheckoutForm({ mpesaEnabled }: CheckoutFormProps) {
         </fieldset>
 
         <Button type="submit" loading={loading}>
-          Place Order — {formatPrice(total)}
+          Place Order — {formatPrice(total, currency)}
         </Button>
       </form>
 
@@ -326,7 +328,7 @@ export function CheckoutForm({ mpesaEnabled }: CheckoutFormProps) {
                 </p>
               </div>
               <p className="text-sm text-neutral-900 shrink-0">
-                {formatPrice(item.price * item.quantity)}
+                {formatPrice(item.price * item.quantity, currency)}
               </p>
             </div>
           ))}
@@ -339,7 +341,7 @@ export function CheckoutForm({ mpesaEnabled }: CheckoutFormProps) {
               Subtotal
             </span>
             <span className="text-sm text-neutral-900">
-              {formatPrice(subtotal ?? 0)}
+              {formatPrice(subtotal ?? 0, currency)}
             </span>
           </div>
           <div className="flex items-center justify-between">
@@ -348,7 +350,7 @@ export function CheckoutForm({ mpesaEnabled }: CheckoutFormProps) {
               Shipping
             </span>
             <span className="text-sm text-neutral-900">
-              {formatPrice(SHIPPING_FEE)}
+              {formatPrice(SHIPPING_FEE, currency)}
             </span>
           </div>
           <div className="flex items-center justify-between border-t
@@ -358,7 +360,7 @@ export function CheckoutForm({ mpesaEnabled }: CheckoutFormProps) {
               Total
             </span>
             <span className="text-base font-medium text-neutral-900">
-              {formatPrice(total)}
+              {formatPrice(total, currency)}
             </span>
           </div>
         </div>

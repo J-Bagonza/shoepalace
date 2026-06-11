@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatPrice } from "@/utils/product";
+import { useCurrency } from "@/context/currency-context";
 import type { Product } from "@/types/product";
 
 interface AdminProductTableProps {
@@ -44,6 +45,7 @@ export function AdminProductTable({
 }: AdminProductTableProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const currency = useCurrency();
 
   async function handleDelete(id: string) {
     if (!confirm("Soft delete this product?")) return;
@@ -185,7 +187,7 @@ export function AdminProductTable({
 
                     {/* Price */}
                     <td className="px-4 py-3 text-xs text-neutral-900">
-                      {formatPrice(product.price)}
+                      {formatPrice(product.price, currency)}
                     </td>
 
                     {/* Stock */}
