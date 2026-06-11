@@ -768,7 +768,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         <div
           className="absolute right-0 top-0 bottom-0 w-64 hidden md:block pointer-events-none"
           style={{
-            backgroundImage: `url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2011,%202026,%2004_57_52%20PM.png)`,
+            backgroundImage: `url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2011,%202026,%2004_38_41%20PM%20(1).png)`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
