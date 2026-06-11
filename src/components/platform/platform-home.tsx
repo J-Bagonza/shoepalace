@@ -771,62 +771,52 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </section>
 
       {/* ── Footer ── */}
-      {/*
-        FIX 2: Image moved to LEFT side. Visible on ALL screen sizes (removed `hidden md:block`).
-        Gradient blends from right (white) to left (transparent) so the image shows on the left
-        and the text content on the right remains clean.
-        FIX 3: This is the ONLY footer in this file. If a duplicate footer appears on the page,
-        it is being rendered by a global layout component (e.g. app/layout.tsx or a shared
-        <Footer /> wrapper). Suppress it on the "/" route in that layout file:
-          const pathname = usePathname();
-          {pathname !== "/" && <Footer />}
-          {pathname !== "/" && <MarqueeTicker />}
-      */}
+      
       <footer className="border-t border-neutral-100 py-8 relative overflow-hidden">
-        {/* Left-side image background — visible on all screen sizes */}
-        <div
-          className="absolute left-0 top-0 bottom-0 w-48 md:w-64 pointer-events-none"
-          style={{
-            backgroundImage: `url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2011,%202026,%2004_57_52%20PM.png)`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          {/* Blend from right (white) so content stays readable */}
-          <div
-            className="absolute inset-0"
-            style={{
-  background:
-    "linear-gradient(to left, #000000 0%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,0.15) 100%)",
-}}
-          />
-          {/* Subtle overall tint */}
-          <div className="absolute inset-0 bg-white/40" />
-        </div>
+  {/* Left-side image background */}
+  <div
+    className="absolute left-0 top-0 bottom-0 w-48 md:w-64 pointer-events-none"
+    style={{
+      backgroundImage:
+        "url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/Adobe%20Express%20-%20file%20(1).png)",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    }}
+  >
+    {/* Subtle dark fade */}
+    <div
+      className="absolute inset-0"
+      style={{
+        background:
+          "linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0))",
+      }}
+    />
+  </div>
 
-        <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
-          
-          <div className="flex items-center gap-6">
-            {[
-              { href: "/#shops", label: "Shops" },
-              { href: "/#how-it-works", label: "About" },
-              { href: "/#contact", label: "Contact" },
-              { href: "/register-store", label: "Open a Store" },
-            ].map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-          <p className="text-[10px] text-neutral-400 uppercase tracking-widest">
-            {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear marketplace.
-          </p>
-        </div>
-      </footer>
+  {/* Content */}
+  <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
+    <div className="flex items-center gap-6">
+      {[
+        { href: "/#shops", label: "Shops" },
+        { href: "/#how-it-works", label: "About" },
+        { href: "/#contact", label: "Contact" },
+        { href: "/register-store", label: "Open a Store" },
+      ].map((link) => (
+        <a
+          key={link.href}
+          href={link.href}
+          className="text-[10px] uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors"
+        >
+          {link.label}
+        </a>
+      ))}
+    </div>
+
+    <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
+      {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear marketplace.
+    </p>
+  </div>
+</footer>
     </div>
   );
 }
