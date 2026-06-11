@@ -796,17 +796,16 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to left, #ffffff 0%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.15) 100%)",
-            }}
+  background:
+    "linear-gradient(to left, #000000 0%, rgba(0,0,0,0.7) 40%, rgba(0,0,0,0.15) 100%)",
+}}
           />
           {/* Subtle overall tint */}
           <div className="absolute inset-0 bg-white/40" />
         </div>
 
         <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
-          <span className="font-bebas text-xl tracking-widest text-neutral-900">
-            ShoePalace
-          </span>
+          
           <div className="flex items-center gap-6">
             {[
               { href: "/#shops", label: "Shops" },
