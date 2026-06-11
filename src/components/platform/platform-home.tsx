@@ -453,13 +453,15 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
 function ProductCarousel({
   products,
   storeSlug,
+  currency,
 }: {
   products: StoreWithProducts["products"];
   storeSlug: string;
+  currency: string;
 }) {
   const rootDomain =
     process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
-
+ 
   if (products.length === 0) {
     return (
       <div className="flex items-center justify-center h-40 bg-[#F5F0E8]">
@@ -469,7 +471,7 @@ function ProductCarousel({
       </div>
     );
   }
-
+ 
   return (
     <div className="relative overflow-hidden">
       <motion.div
@@ -491,16 +493,14 @@ function ProductCarousel({
             rel="noopener noreferrer"
             className="flex-shrink-0 w-36 group"
           >
-            <div className="relative aspect-square bg-[#F5F0E8]
-              overflow-hidden mb-2">
+            <div className="relative aspect-square bg-[#F5F0E8] overflow-hidden mb-2">
               {product.image_url ? (
                 <Image
                   src={product.image_url}
                   alt={product.name}
                   fill
                   sizes="144px"
-                  className="object-cover group-hover:scale-105
-                    transition-transform duration-300"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
                 <div className="w-full h-full bg-[#F5F0E8]" />
@@ -510,7 +510,7 @@ function ProductCarousel({
               {product.name}
             </p>
             <p className="text-[11px] text-neutral-500">
-              {formatPrice(product.price)}
+              {formatPrice(product.price, currency)}
             </p>
           </a>
         ))}
@@ -518,13 +518,13 @@ function ProductCarousel({
     </div>
   );
 }
-
+ 
 // ─── Store Card ───────────────────────────────────────────────────
 function StoreCard({ store }: { store: StoreWithProducts }) {
   const rootDomain =
     process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
   const storeUrl = `https://${store.tenant.slug}.${rootDomain}`;
-
+ 
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -533,61 +533,32 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
       transition={{ duration: 0.4 }}
       className={clsx(
         "border bg-white overflow-hidden transition-all",
-        store.is_featured
-          ? "border-neutral-900 shadow-sm"
-          : "border-neutral-100",
+        store.is_featured ? "border-neutral-900 shadow-sm" : "border-neutral-100",
       )}
     >
-      <div className="flex items-center justify-between px-5 py-4
-        border-b border-neutral-100">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
         <div className="flex items-center gap-3">
           {store.tenant.logo_url ? (
-            <div className="relative h-8 w-8 overflow-hidden rounded-sm
-              bg-[#F5F0E8]">
-              <Image
-                src={store.tenant.logo_url}
-                alt={store.tenant.name}
-                fill
-                sizes="32px"
-                className="object-contain p-0.5"
-              />
+            <div className="relative h-8 w-8 overflow-hidden rounded-sm bg-[#F5F0E8]">
+              <Image src={store.tenant.logo_url} alt={store.tenant.name} fill sizes="32px" className="object-contain p-0.5" />
             </div>
           ) : (
-            <div className="h-8 w-8 bg-neutral-900 flex items-center
-              justify-center">
-              <span className="text-white text-xs font-bold uppercase">
-                {store.tenant.name.charAt(0)}
-              </span>
+            <div className="h-8 w-8 bg-neutral-900 flex items-center justify-center">
+              <span className="text-white text-xs font-bold uppercase">{store.tenant.name.charAt(0)}</span>
             </div>
           )}
           <div className="flex flex-col gap-0">
-            <a
-              href={storeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-neutral-900
-                hover:text-[#E8001D] transition-colors leading-tight"
-            >
+            <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-neutral-900 hover:text-[#E8001D] transition-colors leading-tight">
               {store.tenant.name}
             </a>
-            <span className="text-[10px] text-neutral-400">
-              {store.tenant.slug}.shoepalace.store
-            </span>
+            <span className="text-[10px] text-neutral-400">{store.tenant.slug}.shoepalace.store</span>
           </div>
         </div>
-        <a
-          href={storeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[10px] uppercase tracking-widest text-neutral-400
-            hover:text-neutral-900 transition-colors"
-        >
+        <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors">
           Visit →
         </a>
         {store.is_featured && (
-          <span className="text-[10px] uppercase tracking-widest
-            text-[#E8001D] border border-[#E8001D] px-2 py-0.5
-            shrink-0">
+          <span className="text-[10px] uppercase tracking-widest text-[#E8001D] border border-[#E8001D] px-2 py-0.5 shrink-0">
             Featured
           </span>
         )}
@@ -596,11 +567,13 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
         <ProductCarousel
           products={store.products}
           storeSlug={store.tenant.slug}
+          currency={store.currency}
         />
       </div>
     </motion.div>
   );
 }
+ 
 
 // ─── Main Platform Page ───────────────────────────────────────────
 export function PlatformHomePage({ stores }: PlatformHomeProps) {
