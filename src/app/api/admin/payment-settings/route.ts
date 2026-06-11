@@ -80,27 +80,32 @@ async function updateHandler(req: Request): Promise<Response> {
 
   const { payhero_api_key, payhero_channel_id, is_active } = validation.data;
 
-  const updatePayload: Record<string, unknown> = {
+  const updatePayload: {
+    tenant_id: string;
+    payhero_api_key_encrypted?: string | null;
+    payhero_channel_id?: string | null;
+    is_active?: boolean;
+  } = {
     tenant_id: auth.tenantId,
   };
 
   if (payhero_api_key !== undefined) {
-    updatePayload["payhero_api_key_encrypted"] = encrypt(payhero_api_key);
+    updatePayload.payhero_api_key_encrypted = encrypt(payhero_api_key);
   }
   if (payhero_channel_id !== undefined) {
-    updatePayload["payhero_channel_id"] = payhero_channel_id;
+    updatePayload.payhero_channel_id = payhero_channel_id;
   }
   if (is_active !== undefined) {
-    updatePayload["is_active"] = is_active;
+    updatePayload.is_active = is_active;
   }
 
   const admin = createAdminSupabaseClient();
   await admin.rpc("set_tenant_context", { p_tenant_id: auth.tenantId });
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await admin
-  .from("tenant_payment_settings")
-  .upsert(updatePayload, { onConflict: "tenant_id" }) as { error: { message: string } | null };
+    .from("tenant_payment_settings")
+    .upsert(updatePayload, { onConflict: "tenant_id" });
+
   if (error) {
     log.error(
       { requestId, event: "admin.payment_settings.update.error" },
