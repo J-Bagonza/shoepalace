@@ -51,17 +51,20 @@ async function updateHandler(req: Request): Promise<Response> {
   await admin.rpc("set_tenant_context", { p_tenant_id: auth.tenantId });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (admin as any)
-    .from("tenant_settings")
-    .upsert({
+  const { data, error } = await admin
+  .from("tenant_settings")
+  .upsert(
+    {
       tenant_id: auth.tenantId,
       ...validation.data,
-    })
-    .select()
-    .single() as {
-    data: TenantSettings | null;
-    error: { message: string } | null;
-  };
+    },
+    { onConflict: "tenant_id" },
+  )
+  .select()
+  .single() as {
+  data: TenantSettings | null;
+  error: { message: string } | null;
+};
 
   if (error || !data) {
     log.error(

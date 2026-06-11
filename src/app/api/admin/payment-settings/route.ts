@@ -98,10 +98,9 @@ async function updateHandler(req: Request): Promise<Response> {
   await admin.rpc("set_tenant_context", { p_tenant_id: auth.tenantId });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (admin as any)
-    .from("tenant_payment_settings")
-    .upsert(updatePayload) as { error: { message: string } | null };
-
+  const { error } = await admin
+  .from("tenant_payment_settings")
+  .upsert(updatePayload, { onConflict: "tenant_id" }) as { error: { message: string } | null };
   if (error) {
     log.error(
       { requestId, event: "admin.payment_settings.update.error" },
