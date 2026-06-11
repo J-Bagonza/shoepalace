@@ -455,7 +455,6 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       {/* ── Hero ── */}
       <section className="pt-[56px] min-h-[58vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
         <div className="absolute inset-0 z-0">
-          {/* UPDATED VIDEO SRC + reduced overlay for more clarity */}
           <video
             src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/2026_0611_171536.mp4"
             autoPlay
@@ -546,7 +545,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         </div>
       </section>
 
-      {/* ── How It Works — redesigned ── */}
+      {/* ── How It Works ── */}
       <section id="how-it-works" className="bg-[#F5F0E8] py-20 md:py-28 overflow-hidden">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
 
@@ -659,22 +658,31 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         </div>
       </section>
 
-      {/* ── CTA — "Sell on ShoePalace" with image background on right ── */}
+      {/* ── CTA — "Sell on ShoePalace" ── */}
+      {/*
+        FIX 1: Image is now visible on ALL screen sizes (removed `hidden md:block`).
+        On mobile: full-width background with a strong left-to-right gradient overlay
+        so the text remains legible. On desktop: same as before (right-half panel).
+      */}
       <section className="bg-[#0A0A0A] text-white py-0 overflow-hidden relative">
-        {/* Right-side image panel */}
+        {/* Background image — visible on all screen sizes */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-1/2 hidden md:block"
+          className="absolute inset-0"
           style={{
             backgroundImage: `url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/818f929e-6d8e-4a0e-b54e-cb053585fde5.png)`,
             backgroundSize: "cover",
             backgroundPosition: "center top",
           }}
         >
-          {/* Gradient blend from left edge */}
+          {/*
+            Mobile: heavy left-side overlay so white text reads clearly over the image.
+            Desktop (md+): gradient starts transparent on the right half, fades to solid
+            on the left half — same visual as original right-panel effect.
+          */}
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to right, #0A0A0A 0%, rgba(10,10,10,0.6) 40%, rgba(10,10,10,0.15) 100%)",
+              background: "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 35%, rgba(10,10,10,0.75) 60%, rgba(10,10,10,0.3) 100%)",
             }}
           />
         </div>
@@ -762,25 +770,36 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         </div>
       </section>
 
-      {/* ── Footer with right-side image blend ── */}
+      {/* ── Footer ── */}
+      {/*
+        FIX 2: Image moved to LEFT side. Visible on ALL screen sizes (removed `hidden md:block`).
+        Gradient blends from right (white) to left (transparent) so the image shows on the left
+        and the text content on the right remains clean.
+        FIX 3: This is the ONLY footer in this file. If a duplicate footer appears on the page,
+        it is being rendered by a global layout component (e.g. app/layout.tsx or a shared
+        <Footer /> wrapper). Suppress it on the "/" route in that layout file:
+          const pathname = usePathname();
+          {pathname !== "/" && <Footer />}
+          {pathname !== "/" && <MarqueeTicker />}
+      */}
       <footer className="border-t border-neutral-100 py-8 relative overflow-hidden">
-        {/* Right-side image background, blended in */}
+        {/* Left-side image background — visible on all screen sizes */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-64 hidden md:block pointer-events-none"
+          className="absolute left-0 top-0 bottom-0 w-48 md:w-64 pointer-events-none"
           style={{
-            backgroundImage: `url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2011,%202026,%2004_38_41%20PM%20(1).png)`,
+            backgroundImage: `url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2011,%202026,%2004_57_52%20PM.png)`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         >
-          {/* Blend to white from left */}
+          {/* Blend from right (white) so content stays readable */}
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to right, #ffffff 0%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.15) 100%)",
+              background: "linear-gradient(to left, #ffffff 0%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.15) 100%)",
             }}
           />
-          {/* Slight overall tint to keep it very subtle */}
+          {/* Subtle overall tint */}
           <div className="absolute inset-0 bg-white/40" />
         </div>
 
