@@ -4,6 +4,8 @@ import { requireAuth } from "@/lib/security/with-auth";
 import { createRequestLogger } from "@/lib/logger/request-logger";
 import type { ApiResponse } from "@/types/api";
 
+export const dynamic = "force-dynamic";
+
 async function handler(req: Request): Promise<Response> {
   const { log, requestId } = createRequestLogger(req);
 

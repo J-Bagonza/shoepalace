@@ -11,6 +11,8 @@ import { createRequestLogger } from "@/lib/logger/request-logger";
 import type { ApiResponse, PaginatedResponse } from "@/types/api";
 import type { Product } from "@/types/product";
 
+export const dynamic = "force-dynamic";
+
 async function handler(req: Request): Promise<Response> {
   const { log, requestId } = createRequestLogger(req);
 

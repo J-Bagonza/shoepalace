@@ -3,6 +3,8 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import type { ApiResponse } from "@/types/api";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(): Promise<Response> {
   const supabase = createServerSupabaseClient();
   const tenantId = getTenantIdFromHeaders();

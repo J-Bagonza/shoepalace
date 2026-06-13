@@ -7,6 +7,8 @@ import { createRequestLogger } from "@/lib/logger/request-logger";
 import { z } from "zod";
 import type { ApiResponse } from "@/types/api";
 
+export const dynamic = "force-dynamic";
+
 const statusQuerySchema = z.object({
   order_id: z.string().uuid(),
 });

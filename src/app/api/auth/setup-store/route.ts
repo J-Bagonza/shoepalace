@@ -6,6 +6,8 @@ import { createRequestLogger } from "@/lib/logger/request-logger";
 import { z } from "zod";
 import type { ApiResponse } from "@/types/api";
 
+export const dynamic = "force-dynamic";
+
 const setupSchema = z.object({
   token: z.string().min(64).max(64),
   password: z

@@ -10,6 +10,8 @@ import { createRequestLogger } from "@/lib/logger/request-logger";
 import type { ApiResponse } from "@/types/api";
 import type { Order } from "@/types/order";
 
+export const dynamic = "force-dynamic";
+
 const SHIPPING_FEE = 300; // KES 300 flat rate
 
 async function handler(req: Request): Promise<Response> {
