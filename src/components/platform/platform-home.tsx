@@ -373,14 +373,14 @@ function ProductCarousel({
             rel="noopener noreferrer"
             className="flex-shrink-0 w-36 group"
           >
-            <div className="relative aspect-square bg-[#F5F0E8] overflow-hidden mb-2">
+            <div className="relative aspect-square bg-white overflow-hidden mb-2 border border-neutral-100">
               {product.image_url ? (
                 <Image
                   src={product.image_url}
                   alt={product.name}
                   fill
                   sizes="144px"
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="object-contain group-hover:scale-105 transition-transform duration-300"
                 />
               ) : (
                 <div className="w-full h-full bg-[#F5F0E8]" />
@@ -414,7 +414,7 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
         <div className="flex items-center gap-3">
           {store.tenant.logo_url ? (
-            <div className="relative h-8 w-8 overflow-hidden rounded-sm bg-[#F5F0E8]">
+            <div className="relative h-8 w-8 overflow-hidden rounded-sm bg-white border border-neutral-100">
               <Image src={store.tenant.logo_url} alt={store.tenant.name} fill sizes="32px" className="object-contain p-0.5" />
             </div>
           ) : (
@@ -659,11 +659,6 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </section>
 
       {/* ── CTA — "Sell on ShoePalace" ── */}
-      {/*
-        FIX 1: Image is now visible on ALL screen sizes (removed `hidden md:block`).
-        On mobile: full-width background with a strong left-to-right gradient overlay
-        so the text remains legible. On desktop: same as before (right-half panel).
-      */}
       <section className="bg-[#0A0A0A] text-white py-0 overflow-hidden relative">
         {/* Background image — visible on all screen sizes */}
         <div
@@ -671,18 +666,14 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
           style={{
             backgroundImage: `url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/818f929e-6d8e-4a0e-b54e-cb053585fde5.png)`,
             backgroundSize: "cover",
-            backgroundPosition: "center top",
+            backgroundPosition: "center center",
           }}
         >
-          {/*
-            Mobile: heavy left-side overlay so white text reads clearly over the image.
-            Desktop (md+): gradient starts transparent on the right half, fades to solid
-            on the left half — same visual as original right-panel effect.
-          */}
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 35%, rgba(10,10,10,0.75) 60%, rgba(10,10,10,0.3) 100%)",
+              background:
+                "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 15%, rgba(10,10,10,0.55) 45%, rgba(10,10,10,0.15) 100%)",
             }}
           />
         </div>
@@ -771,52 +762,51 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </section>
 
       {/* ── Footer ── */}
-      
-      <footer className="border-t border-neutral-100 py-8 relative overflow-hidden">
-  {/* Left-side image background */}
-  <div
-    className="absolute left-0 top-0 bottom-0 w-48 md:w-64 pointer-events-none"
-    style={{
-      backgroundImage:
-        "url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/Adobe%20Express%20-%20file%20(1).png)",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-    }}
-  >
-    {/* Subtle dark fade */}
-    <div
-      className="absolute inset-0"
-      style={{
-        background:
-          "linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0))",
-      }}
-    />
-  </div>
-
-  {/* Content */}
-  <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
-    <div className="flex items-center gap-6">
-      {[
-        { href: "/#shops", label: "Shops" },
-        { href: "/#how-it-works", label: "About" },
-        { href: "/#contact", label: "Contact" },
-        { href: "/register-store", label: "Open a Store" },
-      ].map((link) => (
-        <a
-          key={link.href}
-          href={link.href}
-          className="text-[10px] uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors"
+      <footer className="border-t border-neutral-100 py-8 relative overflow-hidden min-h-[120px]">
+        {/* Left-side image background */}
+        <div
+          className="absolute left-0 top-0 h-full w-48 md:w-64 pointer-events-none z-0"
+          style={{
+            backgroundImage:
+              "url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/Adobe%20Express%20-%20file%20(1).png)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
         >
-          {link.label}
-        </a>
-      ))}
-    </div>
+          {/* Subtle dark fade */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0))",
+            }}
+          />
+        </div>
 
-    <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
-      {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear marketplace.
-    </p>
-  </div>
-</footer>
+        {/* Content */}
+        <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-6">
+            {[
+              { href: "/#shops", label: "Shops" },
+              { href: "/#how-it-works", label: "About" },
+              { href: "/#contact", label: "Contact" },
+              { href: "/register-store", label: "Open a Store" },
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-[10px] uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
+            {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear marketplace.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
