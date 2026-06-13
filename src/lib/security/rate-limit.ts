@@ -16,7 +16,7 @@ function getRedis(): Redis {
 // ─── Rate limit configs ───────────────────────────────────────────
 
 const CONFIGS = {
-  // Auth routes — strict, per IP
+  // Auth — strict per IP, prevents brute force
   auth: new Ratelimit({
     redis: getRedis(),
     limiter: Ratelimit.slidingWindow(5, "10 m"),
@@ -24,7 +24,7 @@ const CONFIGS = {
     analytics: true,
   }),
 
-  // Public API — per tenant
+  // Public API — per IP, stops individual scrapers/bots
   api: new Ratelimit({
     redis: getRedis(),
     limiter: Ratelimit.slidingWindow(120, "1 m"),
@@ -32,7 +32,7 @@ const CONFIGS = {
     analytics: true,
   }),
 
-  // Admin API — per tenant, more generous
+  
   admin: new Ratelimit({
     redis: getRedis(),
     limiter: Ratelimit.slidingWindow(300, "1 m"),
@@ -40,7 +40,7 @@ const CONFIGS = {
     analytics: true,
   }),
 
-  // Search — per tenant
+  // Search — per IP, debounced on client but still protect server
   search: new Ratelimit({
     redis: getRedis(),
     limiter: Ratelimit.slidingWindow(60, "1 m"),
@@ -48,7 +48,7 @@ const CONFIGS = {
     analytics: true,
   }),
 
-  // File uploads — per tenant, strict
+  // Uploads — per IP + tenant, strict
   upload: new Ratelimit({
     redis: getRedis(),
     limiter: Ratelimit.slidingWindow(20, "1 m"),
@@ -59,37 +59,49 @@ const CONFIGS = {
 
 export type RateLimitConfig = keyof typeof CONFIGS;
 
-/**
- * Returns identifier for rate limiting.
- * Admin routes use tenant_id for per-tenant limiting.
- * Auth routes use IP to prevent brute force.
- * Public routes use tenant_id to isolate tenant traffic.
- */
+
+export function getClientIp(req: Request): string {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "unknown"
+  );
+}
+
+
 export function getRateLimitIdentifier(
   req: Request,
   config: RateLimitConfig,
 ): string {
-  // Always use IP for auth routes
-  if (config === "auth") {
-    return (
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      req.headers.get("x-real-ip") ??
-      "unknown"
-    );
+  const ip = getClientIp(req);
+  const tenantId = req.headers.get("x-tenant-id") ?? "unknown";
+
+  switch (config) {
+    case "auth":
+    case "api":
+    case "search":
+      
+      return ip;
+
+    case "admin":
+    case "upload":
+      
+      return `${ip}:${tenantId}`;
+
+    default:
+      return ip;
   }
-
-  // Use tenant_id for all other routes
-  const tenantId =
-    req.headers.get("x-tenant-id") ??
-    "00000000-0000-0000-0000-000000000010";
-
-  return tenantId;
 }
 
 export async function checkRateLimit(
   req: Request,
   config: RateLimitConfig,
-): Promise<{ success: boolean; limit: number; remaining: number; reset: number }> {
+): Promise<{
+  success: boolean;
+  limit: number;
+  remaining: number;
+  reset: number;
+}> {
   const limiter = CONFIGS[config];
   const identifier = getRateLimitIdentifier(req, config);
 

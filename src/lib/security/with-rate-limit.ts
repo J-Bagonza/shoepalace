@@ -6,21 +6,31 @@ type RouteHandler = (
   context?: Record<string, unknown>,
 ) => Promise<Response>;
 
-/**
- * Wraps a route handler with per-tenant rate limiting.
- * Returns 429 with Retry-After header when limit exceeded.
- */
+
 export function withRateLimit(
   config: RateLimitConfig,
   handler: RouteHandler,
 ): RouteHandler {
   return async (req: Request, context?: Record<string, unknown>) => {
-    const result = await checkRateLimit(req, config);
+    let result: {
+      success: boolean;
+      limit: number;
+      remaining: number;
+      reset: number;
+    } | null = null;
 
-    if (!result.success) {
-      const retryAfter = Math.ceil(
-        (result.reset - Date.now()) / 1000,
+    try {
+      result = await checkRateLimit(req, config);
+    } catch (err) {
+      console.error(
+        `[rate-limit] checkRateLimit failed for config="${config}" — ` +
+          `failing open`,
+        err,
       );
+    }
+
+    if (result && !result.success) {
+      const retryAfter = Math.ceil((result.reset - Date.now()) / 1000);
 
       const body: ApiResponse = {
         data: null,
@@ -41,13 +51,14 @@ export function withRateLimit(
 
     const response = await handler(req, context);
 
-    // Attach rate limit headers to every response
-    response.headers.set("X-RateLimit-Limit", String(result.limit));
-    response.headers.set(
-      "X-RateLimit-Remaining",
-      String(result.remaining),
-    );
-    response.headers.set("X-RateLimit-Reset", String(result.reset));
+    if (result) {
+      response.headers.set("X-RateLimit-Limit", String(result.limit));
+      response.headers.set(
+        "X-RateLimit-Remaining",
+        String(result.remaining),
+      );
+      response.headers.set("X-RateLimit-Reset", String(result.reset));
+    }
 
     return response;
   };
