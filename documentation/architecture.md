@@ -28,7 +28,7 @@ Supabase runs on AWS underneath — Postgres, S3-compatible storage, the works. 
 |---|---|---|
 | Time to working auth + RLS + storage | Hours | Weeks, and ongoing maintenance |
 | Team required | One developer | Specialists for IAM, RDS, S3, Cognito or custom auth |
-| Cost at current scale (handful of tenants) | ~$25/mo | Comparable infra cost + engineer time, which is the real cost |
+| Cost at current scale (handful of tenants) | No cost currently | Comparable infra cost + engineer time, which is the real cost |
 | Cost at very large scale | Gets expensive | Wins, eventually |
 
 The crossover point is real but it's measured in tens of thousands of daily active users generating sustained database load — not where this project is. Migrating off Supabase later, if that day comes, is a known and well-trodden path (it's Postgres underneath); migrating *to* a fully custom AWS stack now, before there's revenue or traffic to justify it, would be solving tomorrow's problem at the cost of building anything for today.
