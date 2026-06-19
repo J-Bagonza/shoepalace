@@ -55,7 +55,7 @@ export function ImageGallery({ images, productName }: ImageGalleryProps) {
 
   if (sorted.length === 0) {
     return (
-      <div className="aspect-square bg-[#F5F0E8] w-full flex items-center justify-center">
+      <div className="aspect-square bg-white w-full flex items-center justify-center">
         <span className="text-xs uppercase tracking-widest text-neutral-300">
           No Image
         </span>
@@ -98,7 +98,7 @@ export function ImageGallery({ images, productName }: ImageGalleryProps) {
 
         {/* Main image */}
         <div
-          className="relative flex-1 aspect-square md:aspect-[4/5] overflow-hidden bg-[#F5F0E8] cursor-zoom-in"
+          className="relative flex-1 aspect-square md:aspect-[4/5] overflow-hidden bg-white cursor-zoom-in"
           onClick={() => setLightboxOpen(true)}
           role="button"
           aria-label="View full image"
@@ -128,7 +128,7 @@ export function ImageGallery({ images, productName }: ImageGalleryProps) {
                   fill
                   priority
                   sizes="(max-width: 768px) 100vw, 55vw"
-                  className="object-cover"
+                  className="object-contain"
                 />
               </motion.div>
             )}

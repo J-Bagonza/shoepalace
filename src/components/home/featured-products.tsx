@@ -78,7 +78,7 @@ function ProductCard({ product, currency }: { product: Product; currency: string
           style={{ rotateX, rotateY, transformPerspective: 800 }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
-          className="relative aspect-[3/4] overflow-hidden bg-[#F5F0E8]
+          className="relative aspect-[3/4] overflow-hidden bg-white
             will-change-transform"
         >
           {primaryImage ? (
@@ -87,7 +87,7 @@ function ProductCard({ product, currency }: { product: Product; currency: string
               alt={primaryImage.alt || product.name}
               fill
               sizes="(max-width: 768px) 50vw, 25vw"
-              className="object-cover transition-transform duration-700
+              className="object-contain transition-transform duration-700
                 ease-out group-hover:scale-105"
             />
           ) : (
