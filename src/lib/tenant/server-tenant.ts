@@ -35,21 +35,3 @@ export async function getTenantFromHeaders(): Promise<Tenant | null> {
   if (error || !data) return null;
   return data;
 }
-
-/**
- * Sets app.tenant_id on the Postgres session.
- * Call this at the start of any Route Handler that
- * needs RLS tenant isolation via get_tenant_id().
- *
- * Usage:
- *   const admin = createAdminSupabaseClient();
- *   await setTenantContext(admin, tenantId);
- *   // subsequent queries on this client are tenant-scoped
- */
-export async function setTenantContext(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  client: any,
-  tenantId: string,
-): Promise<void> {
-  await client.rpc("set_tenant_context", { p_tenant_id: tenantId });
-}
