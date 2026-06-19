@@ -50,102 +50,111 @@ export function SizeGuideModal({ open, onClose }: SizeGuideModalProps) {
             aria-hidden="true"
           />
 
-          {/* Modal */}
-          <motion.div
-            key="modal"
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{
-              duration: 0.3,
-              ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
-            }}
-            className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg
-              -translate-x-1/2 -translate-y-1/2 bg-white shadow-2xl
-              mx-4"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Size guide"
+          {/* Modal wrapper — handles centering + viewport clamping */}
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center
+              p-4 pointer-events-none"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5
-              border-b border-neutral-100">
-              <h2 className="font-bebas text-2xl tracking-wide
-                text-neutral-900">
-                Size Guide
-              </h2>
-              <button
-                onClick={onClose}
-                className="text-xs uppercase tracking-widest text-neutral-400
-                  hover:text-neutral-900 transition-colors"
-                aria-label="Close size guide"
-              >
-                Close
-              </button>
-            </div>
+            <motion.div
+              key="modal"
+              initial={{ opacity: 0, y: 24, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              transition={{
+                duration: 0.3,
+                ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+              }}
+              className="w-full max-w-lg max-h-[85vh] bg-white shadow-2xl
+                pointer-events-auto flex flex-col"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Size guide"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header — fixed */}
+              <div className="flex items-center justify-between px-5 sm:px-6
+                py-4 sm:py-5 border-b border-neutral-100 shrink-0">
+                <h2 className="font-bebas text-xl sm:text-2xl tracking-wide
+                  text-neutral-900">
+                  Size Guide
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="text-xs uppercase tracking-widest text-neutral-400
+                    hover:text-neutral-900 transition-colors"
+                  aria-label="Close size guide"
+                >
+                  Close
+                </button>
+              </div>
 
-            {/* Measure tip */}
-            <div className="px-6 py-4 bg-[#F5F0E8] border-b
-              border-neutral-100">
-              <p className="text-xs text-neutral-500 leading-relaxed">
-                Measure your foot from heel to toe while standing. Use the
-                centimetre measurement for the most accurate fit. If between
-                sizes, size up.
-              </p>
-            </div>
+              {/* Scrollable body */}
+              <div className="overflow-y-auto flex-1">
+                {/* Measure tip */}
+                <div className="px-5 sm:px-6 py-4 bg-[#F5F0E8] border-b
+                  border-neutral-100">
+                  <p className="text-xs text-neutral-500 leading-relaxed">
+                    Measure your foot from heel to toe while standing. Use
+                    the centimetre measurement for the most accurate fit.
+                    If between sizes, size up.
+                  </p>
+                </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-100">
-                    {["UK", "EU", "US", "CM"].map((h) => (
-                      <th
-                        key={h}
-                        className="px-6 py-3 text-left text-[10px] uppercase
-                          tracking-widest text-neutral-400 font-normal"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {SIZE_DATA.map((row, i) => (
-                    <tr
-                      key={row.uk}
-                      className={
-                        i % 2 === 0
-                          ? "bg-white"
-                          : "bg-neutral-50"
-                      }
-                    >
-                      <td className="px-6 py-3 text-xs font-medium
-                        text-neutral-900">
-                        {row.uk}
-                      </td>
-                      <td className="px-6 py-3 text-xs text-neutral-600">
-                        {row.eu}
-                      </td>
-                      <td className="px-6 py-3 text-xs text-neutral-600">
-                        {row.us}
-                      </td>
-                      <td className="px-6 py-3 text-xs text-neutral-600">
-                        {row.cm}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                {/* Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-neutral-100">
+                        {["UK", "EU", "US", "CM"].map((h) => (
+                          <th
+                            key={h}
+                            className="px-4 sm:px-6 py-3 text-left
+                              text-[10px] uppercase tracking-widest
+                              text-neutral-400 font-normal whitespace-nowrap"
+                          >
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {SIZE_DATA.map((row, i) => (
+                        <tr
+                          key={row.uk}
+                          className={i % 2 === 0 ? "bg-white" : "bg-neutral-50"}
+                        >
+                          <td className="px-4 sm:px-6 py-3 text-xs
+                            font-medium text-neutral-900 whitespace-nowrap">
+                            {row.uk}
+                          </td>
+                          <td className="px-4 sm:px-6 py-3 text-xs
+                            text-neutral-600 whitespace-nowrap">
+                            {row.eu}
+                          </td>
+                          <td className="px-4 sm:px-6 py-3 text-xs
+                            text-neutral-600 whitespace-nowrap">
+                            {row.us}
+                          </td>
+                          <td className="px-4 sm:px-6 py-3 text-xs
+                            text-neutral-600 whitespace-nowrap">
+                            {row.cm}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-neutral-100">
-              <p className="text-xs text-neutral-400">
-                All measurements are approximate. Fit may vary by style.
-              </p>
-            </div>
-          </motion.div>
+              {/* Footer — fixed */}
+              <div className="px-5 sm:px-6 py-4 border-t border-neutral-100
+                shrink-0">
+                <p className="text-xs text-neutral-400">
+                  All measurements are approximate. Fit may vary by style.
+                </p>
+              </div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>
