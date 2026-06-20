@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useTenant } from "@/lib/tenant/context";
 
 const FOOTER_LINKS = {
@@ -47,19 +48,30 @@ export function Footer() {
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-16">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
-            <Link
-              href="/"
-              className="font-bebas text-2xl tracking-wider text-white
-                hover:text-[#E8001D] transition-colors"
-            >
-              {tenant.name}
-            </Link>
-            <p className="text-xs text-white/40 leading-relaxed max-w-[200px]">
-              Precision-crafted footwear for those who move with purpose.
-            </p>
-          </div>
+{/* Brand — transparent PNG sits directly on the footer background,
+    no container/border, so it blends naturally */}
+<div className="col-span-2 md:col-span-1 relative flex flex-col
+  justify-end gap-3 min-h-[220px]">
+  <Image
+    src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2020,%202026,%2001_52_47%20PM.png?width=400&quality=90"
+    alt=""
+    width={260}
+    height={300}
+    className="absolute top-0 left-0 w-full max-w-[220px] h-auto
+      object-contain opacity-90 pointer-events-none select-none"
+    aria-hidden
+  />
+  <Link
+    href="/"
+    className="relative z-10 font-bebas text-2xl tracking-wider text-white
+      hover:text-[#E8001D] transition-colors"
+  >
+    {tenant.name}
+  </Link>
+  <p className="relative z-10 text-xs text-white/70 leading-relaxed max-w-[200px]">
+    Precision-crafted footwear for those who move with purpose.
+  </p>
+</div>
 
           {/* Shop */}
           <div className="flex flex-col gap-4">
