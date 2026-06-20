@@ -52,7 +52,7 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1 relative flex flex-col
             justify-end gap-3 overflow-hidden rounded-sm h-[220px] p-5">
             <Image
-              src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/render/image/public/product-images/hero/ChatGPT%20Image%20Jun%2020,%202026,%2012_08_09%20PM.png?width=400&height=500&resize=cover&quality=80"
+              src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/hero/ChatGPT%20Image%20Jun%2020,%202026,%2001_16_57%20PM.png?width=400&height=500&resize=cover&quality=80"
               alt=""
               fill
               sizes="(max-width: 768px) 50vw, 280px"

@@ -1235,28 +1235,27 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         {/* Background image — served at 1400 px wide via Supabase transform.
             On large screens the image wrapper is inset so the shoe doesn't
             scale up to fill an extra-wide viewport via object-cover. */}
-        <div className="absolute inset-0 lg:inset-y-0 lg:right-0 lg:left-[8%]">
-          <Image
-            src={supabaseImg(
-              "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/818f929e-6d8e-4a0e-b54e-cb053585fde5.png",
-              { width: 1400, quality: 80 },
-            )}
-            alt=""
-            fill
-            sizes="100vw"
-            className="object-cover object-center lg:object-contain lg:object-right"
-            priority={false}
-            aria-hidden
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 15%, rgba(10,10,10,0.55) 45%, rgba(10,10,10,0.15) 100%)",
-            }}
-          />
-        </div>
-
+        <div className="absolute inset-0 lg:inset-y-[-8%] lg:right-0 lg:left-[25%]">
+  <Image
+    src={supabaseImg(
+      "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/818f929e-6d8e-4a0e-b54e-cb053585fde5.png",
+      { width: 1400, quality: 80 },
+    )}
+    alt=""
+    fill
+    sizes="(max-width: 1024px) 100vw, 75vw"
+    className="object-cover object-center lg:object-contain lg:object-center"
+    priority={false}
+    aria-hidden
+  />
+  <div
+    className="absolute inset-0"
+    style={{
+      background:
+        "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 15%, rgba(10,10,10,0.55) 45%, rgba(10,10,10,0.15) 100%)",
+    }}
+  />
+</div>
         <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 py-20 md:py-28 flex flex-col md:flex-row items-center md:items-start justify-between gap-12">
           <motion.div
             initial={{ opacity: 0, x: -16 }}
