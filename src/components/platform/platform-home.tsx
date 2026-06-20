@@ -1023,7 +1023,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       <PlatformNavbar stores={stores} />
 
       {/* ── Hero ── */}
-      <section className="pt-[32px] min-h-[560px] sm:h-screen sm:min-h-[640px] flex items-start sm:items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[32px] min-h-[570px] sm:h-screen sm:min-h-[650px] flex items-start sm:items-center bg-[#0A0A0A] text-white relative overflow-hidden">
         <GlobeHeroCanvas />
 
         <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 pt-16 sm:pt-8 pb-6 sm:pb-8 md:py-6">
