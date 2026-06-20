@@ -1017,10 +1017,10 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       <PlatformNavbar stores={stores} />
 
       {/* ── Hero ── */}
-      <section className="pt-[26px] h-screen min-h-[640px] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[32px] h-screen min-h-[640px] flex items-start sm:items-center bg-[#0A0A0A] text-white relative overflow-hidden">
         <GlobeHeroCanvas />
 
-        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-6">
+        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 pt-20 sm:pt-8 pb-8 md:py-6">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1040,22 +1040,22 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
               </p>
             </div>
 
-            <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <a
                 href="#shops"
-                className="bg-white text-neutral-900 px-8 py-3.5 text-xs uppercase tracking-widest border border-white hover:bg-[#E8001D] hover:border-[#E8001D] hover:text-white transition-colors"
+                className="bg-white text-neutral-900 px-6 sm:px-8 py-3 sm:py-3.5 text-xs uppercase tracking-widest border border-white hover:bg-[#E8001D] hover:border-[#E8001D] hover:text-white transition-colors text-center"
               >
                 Browse Stores
               </a>
               <Link
                 href="/register-store"
-                className="bg-transparent text-white px-8 py-3.5 text-xs uppercase tracking-widest border border-white/40 hover:border-white transition-colors"
+                className="bg-transparent text-white px-6 sm:px-8 py-3 sm:py-3.5 text-xs uppercase tracking-widest border border-white/40 hover:border-white transition-colors text-center"
               >
                 Open Your Store
               </Link>
             </div>
 
-            <div className="flex items-center gap-8 pt-4 border-t border-white/10">
+            <div className="flex items-center gap-5 sm:gap-8 pt-4 border-t border-white/10 flex-wrap">
               {[
                 { value: stores.length.toString(), label: "Active Stores" },
                 { value: "Kenya", label: "Market" },
