@@ -2,12 +2,35 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
+// THREE is imported dynamically inside GlobeHeroCanvas to keep it out of the
+// initial JS bundle — it's ~600 KB and not needed until the hero mounts.
 import { formatPrice } from "@/utils/product";
 import { createClient } from "@/lib/supabase/client";
 import type { StoreWithProducts } from "@/lib/platform/fetch-stores-directory";
+
+// ─── Supabase image transform helper ─────────────────────────────
+// Uses Supabase's built-in image transformation API to serve correctly-sized,
+// compressed images instead of full-resolution originals.
+function supabaseImg(
+  url: string,
+  { width, quality = 80 }: { width: number; quality?: number },
+): string {
+  try {
+    const u = new URL(url);
+    // Convert  /object/public/  →  /render/image/public/
+    if (u.pathname.includes("/object/public/")) {
+      u.pathname = u.pathname.replace("/object/public/", "/render/image/public/");
+      u.searchParams.set("width", String(width));
+      u.searchParams.set("quality", String(quality));
+    }
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
 
 interface PlatformHomeProps {
   stores: StoreWithProducts[];
@@ -16,52 +39,72 @@ interface PlatformHomeProps {
 // ─── Auth state hook for platform page ───────────────────────────
 type PlatformAuthState = "loading" | "unauthenticated" | "user" | "platform_admin";
 
+// Module-level in-memory cache so re-renders / StrictMode double-mounts don't
+// fire duplicate network requests within the same browser session.
+let _authCache: { state: PlatformAuthState; email: string } | null = null;
+let _authInflight: Promise<void> | null = null;
+
 function usePlatformAuth() {
-  const [state, setState] = useState<PlatformAuthState>("loading");
-  const [email, setEmail] = useState<string>("");
+  const [state, setState] = useState<PlatformAuthState>(
+    _authCache?.state ?? "loading",
+  );
+  const [email, setEmail] = useState<string>(_authCache?.email ?? "");
 
   useEffect(() => {
     let cancelled = false;
 
-    async function resolve() {
-      try {
-        const res = await fetch("/api/auth/platform-me", {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Cache-Control": "no-cache, no-store",
-            "Pragma": "no-cache",
-          },
-        });
-
-        if (cancelled) return;
-
-        if (!res.ok) {
-          setState("unauthenticated");
-          setEmail("");
-          return;
+    async function resolve(bust = false) {
+      // Return cached result instantly unless we're busting the cache
+      if (_authCache && !bust) {
+        if (!cancelled) {
+          setState(_authCache.state);
+          setEmail(_authCache.email);
         }
+        return;
+      }
 
-        const json = await res.json() as {
-          data: { role: string; email: string } | null;
-        };
+      // Deduplicate concurrent fetches
+      if (!_authInflight || bust) {
+        _authInflight = (async () => {
+          try {
+            const res = await fetch("/api/auth/platform-me", {
+              method: "GET",
+              credentials: "include",
+              // Let the browser cache this for 30 s — auth state rarely changes
+              // mid-session. Explicit sign-out busts the cache below.
+              cache: "default",
+            });
 
-        if (cancelled) return;
+            if (!res.ok) {
+              _authCache = { state: "unauthenticated", email: "" };
+              return;
+            }
 
-        if (!json.data) {
-          setState("unauthenticated");
-          return;
-        }
+            const json = await res.json() as {
+              data: { role: string; email: string } | null;
+            };
 
-        setEmail(json.data.email);
+            if (!json.data) {
+              _authCache = { state: "unauthenticated", email: "" };
+              return;
+            }
 
-        if (json.data.role === "platform_admin") {
-          setState("platform_admin");
-        } else {
-          setState("user");
-        }
-      } catch {
-        if (!cancelled) setState("unauthenticated");
+            _authCache = {
+              state: json.data.role === "platform_admin" ? "platform_admin" : "user",
+              email: json.data.email,
+            };
+          } catch {
+            _authCache = { state: "unauthenticated", email: "" };
+          } finally {
+            _authInflight = null;
+          }
+        })();
+      }
+
+      await _authInflight;
+      if (!cancelled && _authCache) {
+        setState(_authCache.state);
+        setEmail(_authCache.email);
       }
     }
 
@@ -71,12 +114,14 @@ function usePlatformAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event) => {
         if (event === "SIGNED_OUT") {
+          _authCache = null;
           if (!cancelled) {
             setState("unauthenticated");
             setEmail("");
           }
         } else {
-          void resolve();
+          // Bust cache on auth state changes (sign-in, token refresh, etc.)
+          void resolve(true);
         }
       },
     );
@@ -96,6 +141,7 @@ function usePlatformAuth() {
     } catch {
       // Continue even if request fails
     }
+    _authCache = null; // bust the module-level cache
     setState("unauthenticated");
     setEmail("");
     window.location.href = "/";
@@ -376,11 +422,12 @@ function ProductCarousel({
             <div className="relative aspect-square bg-white overflow-hidden mb-2 border border-neutral-100">
               {product.image_url ? (
                 <Image
-                  src={product.image_url}
+                  src={supabaseImg(product.image_url, { width: 288, quality: 82 })}
                   alt={product.name}
                   fill
                   sizes="144px"
                   className="object-contain group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full bg-[#F5F0E8]" />
@@ -415,7 +462,13 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
         <div className="flex items-center gap-3">
           {store.tenant.logo_url ? (
             <div className="relative h-8 w-8 overflow-hidden rounded-sm bg-white border border-neutral-100">
-              <Image src={store.tenant.logo_url} alt={store.tenant.name} fill sizes="32px" className="object-contain p-0.5" />
+              <Image
+                src={supabaseImg(store.tenant.logo_url, { width: 64, quality: 85 })}
+                alt={store.tenant.name}
+                fill
+                sizes="32px"
+                className="object-contain p-0.5"
+              />
             </div>
           ) : (
             <div className="h-8 w-8 bg-neutral-900 flex items-center justify-center">
@@ -445,6 +498,477 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
   );
 }
 
+// ─── Globe Hero Canvas (immersive product globe) ─────────────────
+// Images: sp (1).jpg through sp (39).jpg in the `hero/` bucket folder.
+// Request 400 px wide WebP-compressed versions via Supabase image transforms —
+// dramatically smaller downloads for tiles that are never shown larger than ~200 px.
+const SUPABASE_BASE = "https://hisgmvazdmtgjuepuqit.supabase.co";
+const HERO_IMAGE_URLS = Array.from(
+  { length: 39 },
+  (_, i) =>
+    `${SUPABASE_BASE}/storage/v1/render/image/public/product-images/hero/sp%20(${
+      i + 1
+    }).jpg?width=400&quality=78`,
+);
+
+// THREE is loaded dynamically so all Three.js object types are typed as `any`
+// at module scope to avoid "Cannot find namespace 'THREE'" TS errors.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type V3 = any;
+interface GlobeTile {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mesh: any;
+  basePosition: V3;
+  targetRestOpacity: number;
+  phase: "in" | "held" | "out" | null;
+  phaseStart: number;
+  restTransform?: { pos: V3; quat: V3 };
+  outStartPos?: V3;
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function GlobeHeroCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  const vignetteRef = useRef<HTMLDivElement | null>(null);
+  const statusRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let cancelled = false;
+    let rafId = 0;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    // Dynamically import Three.js so it is excluded from the initial JS bundle.
+    // This alone removes ~600 KB from the page's critical path.
+    void (async () => {
+      const THREE = await import("three");
+      if (cancelled) return;
+
+    // ----- config -----
+    const GLOBE_RADIUS = 9;
+    const TILE_COUNT = 90;
+    const ORBIT_DURATION_MS = 5000; // phase 1: establishing orbit shot
+    const DIVE_DURATION_MS = 2200; // phase 2: camera flies to the center
+    const FOCUS_TRANSITION_MS = 1100; // ease an image in / out
+    const FOCUS_HOLD_MS = 3000; // image stays fully visible
+    const FOCUS_GAP_MS = 250; // breather between images
+    const AMBIENT_ROTATE_SPEED = 0.0006; // slow drift once inside
+    const STAGE_RIGHT_OFFSET = 2.4;
+    const STAGE_UP_OFFSET = 0.2;
+    const STAGE_FORWARD_DIST = 4.2;
+    const STAGE_SCALE = 1.9;
+
+    const schedule = (fn: () => void, ms: number) => {
+      const id = setTimeout(() => {
+        if (!cancelled) fn();
+      }, ms);
+      timeouts.push(id);
+      return id;
+    };
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      window.innerWidth / window.innerHeight,
+      0.05,
+      1000,
+    );
+
+    const OUTSIDE_CAMERA_POS = new THREE.Vector3(2, 0.5, 24);
+    const INSIDE_CAMERA_POS = new THREE.Vector3(0, 0, 0.01);
+    camera.position.copy(OUTSIDE_CAMERA_POS);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x000000, 0);
+
+    scene.fog = new THREE.Fog(0x0b0b0c, 4, 16);
+
+    const globeGroup = new THREE.Group();
+    scene.add(globeGroup);
+
+    function positionGlobeForViewport() {
+      const isNarrow = window.innerWidth < 900;
+      globeGroup.position.x = isNarrow ? 0 : GLOBE_RADIUS * 0.5;
+      globeGroup.position.y = isNarrow ? 1.5 : 0.4;
+    }
+    positionGlobeForViewport();
+
+    const loader = new THREE.TextureLoader();
+    loader.crossOrigin = "anonymous";
+
+    const tiles: GlobeTile[] = [];
+
+    function fibonacciSpherePoints(count: number, radius: number) {
+      const points: V3[] = [];
+      const offset = 2 / count;
+      const increment = Math.PI * (3 - Math.sqrt(5));
+      for (let i = 0; i < count; i++) {
+        const y = i * offset - 1 + offset / 2;
+        const r = Math.sqrt(Math.max(0, 1 - y * y));
+        const phi = i * increment;
+        const x = Math.cos(phi) * r;
+        const z = Math.sin(phi) * r;
+        points.push(new THREE.Vector3(x, y, z).multiplyScalar(radius));
+      }
+      return points;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function animateOpacity(material: any, target: number, durationMs: number) {
+      const start = material.opacity;
+      const startTime = performance.now();
+      function step() {
+        if (cancelled) return;
+        const t = Math.min(1, (performance.now() - startTime) / durationMs);
+        material.opacity = start + (target - start) * easeInOutCubic(t);
+        if (t < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    let loadedCount = 0;
+    function buildTiles() {
+      const points = fibonacciSpherePoints(TILE_COUNT, GLOBE_RADIUS);
+
+      // Create all tile meshes immediately (placeholder grey squares)
+      // but load textures in prioritised batches to avoid 90 simultaneous
+      // network requests on mount. The first 9 unique images load right away
+      // so the globe looks alive quickly; the rest trickle in after 800 ms.
+      const IMMEDIATE_BATCH = 9;
+
+      points.forEach((pos, i) => {
+        const placeholderMat = new THREE.MeshBasicMaterial({
+          color: 0x2a2a2a,
+          transparent: true,
+          opacity: 0.0,
+          side: THREE.DoubleSide,
+          fog: true,
+        });
+
+        const size = 1.3;
+        const geo = new THREE.PlaneGeometry(size, size);
+        const mesh = new THREE.Mesh(geo, placeholderMat);
+        mesh.position.copy(pos);
+        mesh.lookAt(0, 0, 0);
+        globeGroup.add(mesh);
+
+        const tile: GlobeTile = {
+          mesh,
+          basePosition: pos.clone(),
+          targetRestOpacity: 0.5,
+          phase: null,
+          phaseStart: 0,
+        };
+        tiles.push(tile);
+
+        // Load this tile's texture — immediately for the first batch,
+        // deferred for the rest so we don't flood the network.
+        const url = HERO_IMAGE_URLS[i % HERO_IMAGE_URLS.length]!;
+        const loadTile = () => {
+          loader.load(
+            url,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (texture: any) => {
+              if (cancelled) return;
+              // Use LinearMipmapLinearFilter for better quality when textures
+              // are displayed smaller than their native resolution.
+              texture.minFilter = THREE.LinearMipmapLinearFilter;
+              const mat = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                opacity: 0.0,
+                side: THREE.DoubleSide,
+                fog: true,
+              });
+              mesh.material = mat;
+              loadedCount++;
+              tile.targetRestOpacity = 0.45 + Math.random() * 0.25;
+              animateOpacity(mat, tile.targetRestOpacity, 900);
+
+              if (loadedCount === 1 && statusRef.current) {
+                statusRef.current.textContent = "globe ready";
+              }
+              if (loadedCount === points.length && statusRef.current) {
+                statusRef.current.style.opacity = "0";
+              }
+            },
+            undefined,
+            () => { loadedCount++; },
+          );
+        };
+
+        if (i < IMMEDIATE_BATCH) {
+          loadTile();
+        } else {
+          // Stagger the rest: batch every 9 tiles with 250 ms between batches
+          const batchDelay = Math.floor((i - IMMEDIATE_BATCH) / 9) * 250 + 800;
+          schedule(loadTile, batchDelay);
+        }
+      });
+    }
+    buildTiles();
+
+    // ----- sequence state machine -----
+    // 'orbit'  -> camera outside, globe spins, establishing shot
+    // 'diving' -> camera flies from outside to the center
+    // 'inside' -> camera at center, images fly out at the viewer one at a time
+    let sequenceState: "orbit" | "diving" | "inside" = "orbit";
+    let stateStartedAt = performance.now();
+
+    function enterState(name: "orbit" | "diving" | "inside") {
+      sequenceState = name;
+      stateStartedAt = performance.now();
+      if (name === "diving" && overlayRef.current) {
+        overlayRef.current.style.opacity = "0.85";
+      }
+      if (name === "inside") {
+        if (vignetteRef.current) vignetteRef.current.style.opacity = "1";
+        startFocusCycle();
+      }
+    }
+
+    schedule(() => enterState("diving"), ORBIT_DURATION_MS);
+    schedule(() => enterState("inside"), ORBIT_DURATION_MS + DIVE_DURATION_MS);
+
+    // ----- focus cycle -----
+    // a tile flies from its position on the sphere toward the viewer,
+    // holds, then returns
+    let focusedTile: GlobeTile | null = null;
+
+    function pickNextFocusTile(): GlobeTile | null {
+  const candidates = tiles.filter((t) => t.mesh.material.map && t !== focusedTile);
+  if (candidates.length === 0) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)] ?? null;
+}
+
+    function startFocusCycle() {
+      if (sequenceState !== "inside" || cancelled) return;
+
+      const next = pickNextFocusTile();
+      if (!next) {
+        schedule(startFocusCycle, 500);
+        return;
+      }
+
+      // snapshot where it rests on the globe before detaching, so it can
+      // move independently of the rotating group
+      next.restTransform = getRestWorldTransform(next);
+      detachFromGlobe(next);
+
+      next.phase = "in";
+      next.phaseStart = performance.now();
+      focusedTile = next;
+
+      schedule(() => {
+        next.outStartPos = computeStageWorldPosition();
+        next.phase = "out";
+        next.phaseStart = performance.now();
+      }, FOCUS_TRANSITION_MS + FOCUS_HOLD_MS);
+
+      schedule(
+        startFocusCycle,
+        FOCUS_TRANSITION_MS + FOCUS_HOLD_MS + FOCUS_TRANSITION_MS + FOCUS_GAP_MS,
+      );
+    }
+
+    const tmpForward = new THREE.Vector3();
+    const tmpRight = new THREE.Vector3();
+    const tmpUp = new THREE.Vector3();
+    const tmpStageWorld = new THREE.Vector3();
+    const tmpWorldPos = new THREE.Vector3();
+    const tmpWorldQuat = new THREE.Quaternion();
+    const tmpLookMatrix = new THREE.Matrix4();
+    const tmpRestQuat = new THREE.Quaternion();
+
+    function computeStageWorldPosition() {
+      camera.getWorldDirection(tmpForward);
+      tmpUp.copy(camera.up);
+      tmpRight.crossVectors(tmpForward, tmpUp).normalize();
+      tmpStageWorld
+        .copy(camera.position)
+        .addScaledVector(tmpForward, STAGE_FORWARD_DIST)
+        .addScaledVector(tmpRight, STAGE_RIGHT_OFFSET)
+        .addScaledVector(tmpUp, STAGE_UP_OFFSET);
+      return tmpStageWorld.clone();
+    }
+
+    // where a tile "lives" when resting in the globe, in WORLD space
+    function getRestWorldTransform(tile: GlobeTile) {
+      const worldPos = globeGroup.localToWorld(tile.basePosition.clone());
+      tmpLookMatrix.lookAt(worldPos, globeGroup.position, tile.mesh.up);
+      tmpRestQuat.setFromRotationMatrix(tmpLookMatrix);
+      return { pos: worldPos, quat: tmpRestQuat.clone() };
+    }
+
+    // pull the tile out of the rotating globe group and into the scene root,
+    // preserving its current world transform
+    function detachFromGlobe(tile: GlobeTile) {
+      tile.mesh.getWorldPosition(tmpWorldPos);
+      tile.mesh.getWorldQuaternion(tmpWorldQuat);
+      globeGroup.remove(tile.mesh);
+      scene.add(tile.mesh);
+      tile.mesh.position.copy(tmpWorldPos);
+      tile.mesh.quaternion.copy(tmpWorldQuat);
+    }
+
+    // put the tile back into the globe group at its resting local transform
+    function reattachToGlobe(tile: GlobeTile) {
+      scene.remove(tile.mesh);
+      globeGroup.add(tile.mesh);
+      tile.mesh.position.copy(tile.basePosition);
+      tile.mesh.lookAt(globeGroup.position);
+    }
+
+    function updateTileFocusState(tile: GlobeTile, now: number) {
+      const mat = tile.mesh.material;
+      if (!mat.map || !tile.phase) return;
+
+      if (tile.phase === "in") {
+        const t = Math.min(1, (now - tile.phaseStart) / FOCUS_TRANSITION_MS);
+        const e = easeInOutCubic(t);
+        const stagePos = computeStageWorldPosition();
+        const restPos = tile.restTransform!.pos;
+        const restQuat = tile.restTransform!.quat;
+
+        tile.mesh.position.copy(restPos).lerp(stagePos, e);
+        tile.mesh.quaternion.copy(restQuat).slerp(camera.quaternion, e);
+        tile.mesh.scale.setScalar(1 + e * (STAGE_SCALE - 1));
+        mat.opacity = tile.targetRestOpacity + (1 - tile.targetRestOpacity) * e;
+        mat.fog = false; // left the globe now, no depth-fog while "on stage"
+
+        if (t >= 1) tile.phase = "held";
+      } else if (tile.phase === "held") {
+        // fixed in world space, dead-on to the camera
+        tile.mesh.position.copy(computeStageWorldPosition());
+        tile.mesh.quaternion.copy(camera.quaternion);
+        tile.mesh.scale.setScalar(STAGE_SCALE);
+        mat.opacity = 1;
+        mat.fog = false;
+      } else if (tile.phase === "out") {
+        const t = Math.min(1, (now - tile.phaseStart) / FOCUS_TRANSITION_MS);
+        const e = easeInOutCubic(t);
+        const stagePos = tile.outStartPos!;
+        const restTransform = getRestWorldTransform(tile);
+
+        tile.mesh.position.copy(stagePos).lerp(restTransform.pos, e);
+        tile.mesh.quaternion.copy(camera.quaternion).slerp(restTransform.quat, e);
+        tile.mesh.scale.setScalar(STAGE_SCALE - e * (STAGE_SCALE - 1));
+        mat.opacity = 1 - (1 - tile.targetRestOpacity) * e;
+        mat.fog = e > 0.6;
+
+        if (t >= 1) {
+          tile.phase = null;
+          reattachToGlobe(tile);
+          tile.mesh.scale.setScalar(1);
+          mat.opacity = tile.targetRestOpacity;
+          mat.fog = true;
+        }
+      }
+    }
+
+    // ----- render loop -----
+    function animate() {
+      rafId = requestAnimationFrame(animate);
+      const now = performance.now();
+
+      if (sequenceState === "orbit") {
+        globeGroup.rotation.y += 0.0035; // establishing spin
+        camera.position.copy(OUTSIDE_CAMERA_POS);
+        camera.lookAt(globeGroup.position);
+      } else if (sequenceState === "diving") {
+        const t = Math.min(1, (now - stateStartedAt) / DIVE_DURATION_MS);
+        const e = easeInOutCubic(t);
+        globeGroup.rotation.y += 0.0035 * (1 - e) + AMBIENT_ROTATE_SPEED * e;
+
+        const target = globeGroup.position.clone().add(INSIDE_CAMERA_POS);
+        camera.position.lerpVectors(OUTSIDE_CAMERA_POS, target, e);
+        camera.fov = 45 + 25 * e; // widen FOV as we get close, for "swallowed up" feel
+        camera.updateProjectionMatrix();
+        camera.lookAt(globeGroup.position.x, globeGroup.position.y, globeGroup.position.z - 1);
+      } else if (sequenceState === "inside") {
+        globeGroup.rotation.y += AMBIENT_ROTATE_SPEED;
+        const target = globeGroup.position.clone().add(INSIDE_CAMERA_POS);
+        camera.position.copy(target);
+        camera.lookAt(globeGroup.position.x, globeGroup.position.y, globeGroup.position.z - 1);
+        tiles.forEach((tile) => updateTileFocusState(tile, now));
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    function handleResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      positionGlobeForViewport();
+    }
+    window.addEventListener("resize", handleResize);
+
+    // Store cleanup fn so the outer effect cleanup can call it even though
+    // Three.js was loaded asynchronously.
+    (canvas as any).__threeCleanup = () => {
+      timeouts.forEach(clearTimeout);
+      cancelAnimationFrame(rafId);
+      window.removeEventListener("resize", handleResize);
+      tiles.forEach((tile) => {
+        tile.mesh.geometry.dispose();
+        if (tile.mesh.material.map) tile.mesh.material.map.dispose();
+        tile.mesh.material.dispose();
+      });
+      renderer.dispose();
+    };
+    })(); // end async dynamic-import IIFE
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(rafId);
+      const cleanup = (canvas as any).__threeCleanup;
+      if (typeof cleanup === "function") cleanup();
+    };
+  }, []);
+
+  return (
+    <>
+      <canvas ref={canvasRef} className="absolute inset-0 z-0 block h-full w-full" />
+      <div
+        ref={vignetteRef}
+        className="absolute inset-0 z-[1] pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(circle at 60% 50%, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 100%)",
+          opacity: 0,
+          transition: "opacity 1.4s ease",
+        }}
+      />
+      <div
+        ref={overlayRef}
+        className="absolute inset-0 z-[1] pointer-events-none"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.75) 30%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.05) 100%)",
+          opacity: 1,
+          transition: "opacity 1.2s ease",
+        }}
+      />
+      <div
+        ref={statusRef}
+        className="absolute bottom-6 left-6 z-[2] text-[10px] uppercase tracking-widest text-white/30 transition-opacity duration-500"
+      >
+        loading globe…
+      </div>
+    </>
+  );
+}
 
 // ─── Main Platform Page ───────────────────────────────────────────
 export function PlatformHomePage({ stores }: PlatformHomeProps) {
@@ -453,46 +977,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       <PlatformNavbar stores={stores} />
 
       {/* ── Hero ── */}
-      <section className="pt-[56px] min-h-[58vh] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <video
-            src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/2026_0611_171536.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 w-full h-full object-cover object-center"
-            style={{ opacity: 0.85 }}
-          />
-          <div className="absolute inset-0 bg-[#0A0A0A]/10" />
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(to right, #0A0A0A 0%, #0A0A0A 22%, rgba(10,10,10,0.35) 50%, rgba(10,10,10,0.05) 100%)",
-            }}
-          />
-          <div
-            className="absolute bottom-0 left-0 right-0 h-32"
-            style={{ background: "linear-gradient(to top, #0A0A0A, transparent)" }}
-          />
-        </div>
-
-        <div className="absolute inset-0 z-[1] pointer-events-none select-none overflow-hidden">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute font-bebas text-[48px] sm:text-[80px] md:text-[120px] font-black uppercase tracking-tighter"
-              style={{
-                left: `${(i % 5) * 25}%`,
-                top: `${Math.floor(i / 5) * 33}%`,
-                color: "white",
-                opacity: 0.08,
-              }}
-            >
-              SP
-            </div>
-          ))}
-        </div>
+      <section className="pt-[56px] h-screen min-h-[640px] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+        <GlobeHeroCanvas />
 
         <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-6">
           <motion.div
@@ -660,15 +1146,20 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
       {/* ── CTA — "Sell on ShoePalace" ── */}
       <section className="bg-[#0A0A0A] text-white py-0 overflow-hidden relative">
-        {/* Background image — visible on all screen sizes */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/818f929e-6d8e-4a0e-b54e-cb053585fde5.png)`,
-            backgroundSize: "cover",
-            backgroundPosition: "center center",
-          }}
-        >
+        {/* Background image — served at 1400 px wide via Supabase transform */}
+        <div className="absolute inset-0">
+          <Image
+            src={supabaseImg(
+              "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/818f929e-6d8e-4a0e-b54e-cb053585fde5.png",
+              { width: 1400, quality: 80 },
+            )}
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover object-center"
+            priority={false}
+            aria-hidden
+          />
           <div
             className="absolute inset-0"
             style={{
@@ -763,16 +1254,19 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
       {/* ── Footer ── */}
       <footer className="border-t border-neutral-100 py-8 relative overflow-hidden min-h-[120px]">
-        {/* Left-side image background */}
-        <div
-          className="absolute left-0 top-0 h-full w-48 md:w-64 pointer-events-none z-0"
-          style={{
-            backgroundImage:
-              "url(https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/Adobe%20Express%20-%20file%20(1).png)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
+        {/* Left-side image background — 320 px wide via Supabase transform */}
+        <div className="absolute left-0 top-0 h-full w-48 md:w-64 pointer-events-none z-0">
+          <Image
+            src={supabaseImg(
+              "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/Adobe%20Express%20-%20file%20(1).png",
+              { width: 320, quality: 80 },
+            )}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 192px, 256px"
+            className="object-cover object-center"
+            aria-hidden
+          />
           {/* Subtle dark fade */}
           <div
             className="absolute inset-0"
