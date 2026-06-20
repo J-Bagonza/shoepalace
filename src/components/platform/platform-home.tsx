@@ -1046,16 +1046,16 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 items-start">
               <a
                 href="#shops"
-                className="bg-white text-neutral-900 px-6 sm:px-8 py-3 sm:py-3.5 text-xs uppercase tracking-widest border border-white hover:bg-[#E8001D] hover:border-[#E8001D] hover:text-white transition-colors text-center"
+                className="w-fit bg-white text-neutral-900 px-6 sm:px-8 py-3 sm:py-3.5 text-xs uppercase tracking-widest border border-white hover:bg-[#E8001D] hover:border-[#E8001D] hover:text-white transition-colors"
               >
                 Browse Stores
               </a>
               <Link
                 href="/register-store"
-                className="bg-transparent text-white px-6 sm:px-8 py-3 sm:py-3.5 text-xs uppercase tracking-widest border border-white/40 hover:border-white transition-colors text-center"
+                className="w-fit bg-transparent text-white px-6 sm:px-8 py-3 sm:py-3.5 text-xs uppercase tracking-widest border border-white/40 hover:border-white transition-colors"
               >
                 Open Your Store
               </Link>
@@ -1104,18 +1104,24 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 title: "Browse verified stores",
                 body: "Every store on ShoePalace has been reviewed before going live. No pop-ups, no noise — just real sellers with real stock.",
                 detail: "Verified sellers only",
+                accent: "#C2542D", // terracotta
+                accentSoft: "#C2542D1A",
               },
               {
                 num: "02",
                 title: "Order direct from the source",
                 body: "Visit any store, browse their full catalogue, and place your order. Each store manages its own inventory and fulfilment.",
                 detail: "Nationwide delivery",
+                accent: "#6B7F5C", // sage
+                accentSoft: "#6B7F5C1A",
               },
               {
                 num: "03",
                 title: "Pay with M-Pesa",
                 body: "No card required. Every store accepts M-Pesa and you get a confirmation the moment payment goes through.",
                 detail: "Instant confirmation",
+                accent: "#C99A3E", // ochre
+                accentSoft: "#C99A3E1A",
               },
             ].map((item, idx) => (
               <motion.div
@@ -1124,17 +1130,36 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.45, delay: idx * 0.1 }}
-                className="bg-[#F5F0E8] p-8 md:p-10 flex flex-col gap-6 group"
+                className="relative bg-[#F5F0E8] p-8 md:p-10 flex flex-col gap-6 group overflow-hidden"
               >
-                <div className="flex items-start justify-between">
-                  <span className="font-bebas text-[56px] text-neutral-300 leading-none group-hover:text-[#E8001D] transition-colors duration-300">
+                {/* Soft color field — modern-art block, sits behind content */}
+                <div
+                  className="absolute -top-6 -right-6 w-28 h-28 rounded-full
+                    opacity-0 group-hover:opacity-100 transition-opacity
+                    duration-500 pointer-events-none"
+                  style={{ backgroundColor: item.accentSoft }}
+                />
+
+                <div className="relative flex items-start justify-between">
+                  <span
+                    className="font-bebas text-[56px] leading-none
+                      transition-colors duration-300"
+                    style={{ color: item.accent }}
+                  >
                     {item.num}
                   </span>
-                  <span className="text-[10px] uppercase tracking-widest text-neutral-400 border border-neutral-300 px-2.5 py-1 mt-2">
+                  <span
+                    className="text-[10px] uppercase tracking-widest px-2.5
+                      py-1 mt-2 border transition-colors duration-300"
+                    style={{
+                      color: item.accent,
+                      borderColor: item.accent,
+                    }}
+                  >
                     {item.detail}
                   </span>
                 </div>
-                <div className="flex flex-col gap-2.5 flex-1">
+                <div className="relative flex flex-col gap-2.5 flex-1">
                   <h3 className="text-base font-medium text-neutral-900 leading-snug">
                     {item.title}
                   </h3>
@@ -1142,7 +1167,10 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                     {item.body}
                   </p>
                 </div>
-                <div className="h-px bg-neutral-300 group-hover:bg-[#E8001D] transition-colors duration-300" />
+                <div
+                  className="relative h-[3px] transition-all duration-300"
+                  style={{ backgroundColor: item.accent }}
+                />
               </motion.div>
             ))}
           </div>
