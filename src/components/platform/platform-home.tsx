@@ -1023,7 +1023,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       <PlatformNavbar stores={stores} />
 
       {/* ── Hero ── */}
-      <section className="pt-[32px] min-h-[570px] sm:h-screen sm:min-h-[650px] flex items-start sm:items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[32px] min-h-[560px] sm:h-screen sm:min-h-[640px] flex items-start sm:items-center bg-[#0A0A0A] text-white relative overflow-hidden">
         <GlobeHeroCanvas />
 
         <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 pt-16 sm:pt-8 pb-6 sm:pb-8 md:py-6">
@@ -1034,7 +1034,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             className="flex flex-col gap-5 sm:gap-8 max-w-xl"
           >
             <div className="flex flex-col gap-4">
-              <span className="text-xs uppercase tracking-[0.4em] text-white/50">
+              <span className="text-xs uppercase tracking-[0.3em] text-white/50">
                 The Footwear Marketplace
               </span>
               <h1 className="font-bebas text-[36px] sm:text-[56px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
@@ -1232,8 +1232,10 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
       {/* ── CTA — "Sell on ShoePalace" ── */}
       <section className="bg-[#0A0A0A] text-white py-0 overflow-hidden relative">
-        {/* Background image — served at 1400 px wide via Supabase transform */}
-        <div className="absolute inset-0">
+        {/* Background image — served at 1400 px wide via Supabase transform.
+            On large screens the image wrapper is inset so the shoe doesn't
+            scale up to fill an extra-wide viewport via object-cover. */}
+        <div className="absolute inset-0 lg:inset-y-0 lg:right-0 lg:left-[8%]">
           <Image
             src={supabaseImg(
               "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/818f929e-6d8e-4a0e-b54e-cb053585fde5.png",
@@ -1242,7 +1244,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             alt=""
             fill
             sizes="100vw"
-            className="object-cover object-center"
+            className="object-cover object-center lg:object-contain lg:object-right"
             priority={false}
             aria-hidden
           />
@@ -1336,7 +1338,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             </div>
           </div>
         </div>
-      </section> 
+      </section>
+
     </div>
   );
 }
