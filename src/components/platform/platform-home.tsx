@@ -167,12 +167,19 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
       <nav className="mx-auto max-w-7xl px-6 lg:px-8 h-[56px] flex items-center justify-between">
 
         {/* Logo */}
-        <Link
-          href="/"
-          className="font-bebas text-2xl tracking-wider text-neutral-900 hover:text-[#E8001D] transition-colors"
-        >
-          ShoePalace
-        </Link>
+<Link
+  href="/"
+  className="flex items-center hover:opacity-80 transition-opacity"
+>
+  <Image
+    src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ShoePalacelogo1.png"
+    alt="ShoePalace"
+    width={1024}
+    height={1024}
+    priority
+    className="h-10 sm:h-11 md:h-12 w-auto object-contain"
+  />
+</Link>
 
         {/* Desktop nav links */}
         <ul className="hidden md:flex items-center gap-8">
