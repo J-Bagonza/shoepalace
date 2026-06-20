@@ -1105,7 +1105,9 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 body: "Every store on ShoePalace has been reviewed before going live. No pop-ups, no noise — just real sellers with real stock.",
                 detail: "Verified sellers only",
                 accent: "#C2542D", // terracotta
-                accentSoft: "#C2542D1A",
+                accentSoft: "#C2542D33",
+                accentSoftHover: "#C2542D55",
+                circle: "absolute -top-10 -right-10 w-32 h-32",
               },
               {
                 num: "02",
@@ -1113,7 +1115,9 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 body: "Visit any store, browse their full catalogue, and place your order. Each store manages its own inventory and fulfilment.",
                 detail: "Nationwide delivery",
                 accent: "#6B7F5C", // sage
-                accentSoft: "#6B7F5C1A",
+                accentSoft: "#6B7F5C33",
+                accentSoftHover: "#6B7F5C55",
+                circle: "absolute -bottom-12 -left-8 w-36 h-36",
               },
               {
                 num: "03",
@@ -1121,7 +1125,9 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 body: "No card required. Every store accepts M-Pesa and you get a confirmation the moment payment goes through.",
                 detail: "Instant confirmation",
                 accent: "#C99A3E", // ochre
-                accentSoft: "#C99A3E1A",
+                accentSoft: "#C99A3E33",
+                accentSoftHover: "#C99A3E55",
+                circle: "absolute top-1/2 -right-14 -translate-y-1/2 w-28 h-28",
               },
             ].map((item, idx) => (
               <motion.div
@@ -1132,12 +1138,18 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 transition={{ duration: 0.45, delay: idx * 0.1 }}
                 className="relative bg-[#F5F0E8] p-8 md:p-10 flex flex-col gap-6 group overflow-hidden"
               >
-                {/* Soft color field — modern-art block, sits behind content */}
+                {/* Soft color field — modern-art block, visible at rest,
+                    intensifies on hover. Position varies per card. */}
                 <div
-                  className="absolute -top-6 -right-6 w-28 h-28 rounded-full
-                    opacity-0 group-hover:opacity-100 transition-opacity
-                    duration-500 pointer-events-none"
+                  className={`${item.circle} rounded-full transition-all
+                    duration-500 pointer-events-none`}
                   style={{ backgroundColor: item.accentSoft }}
+                />
+                <div
+                  className={`${item.circle} rounded-full opacity-0
+                    group-hover:opacity-100 transition-opacity
+                    duration-500 pointer-events-none`}
+                  style={{ backgroundColor: item.accentSoftHover }}
                 />
 
                 <div className="relative flex items-start justify-between">
@@ -1327,32 +1339,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-neutral-100 py-8 relative overflow-hidden min-h-[120px]">
-        {/* Left-side image background — 320 px wide via Supabase transform */}
-        <div className="absolute left-0 top-0 h-full w-48 md:w-64 pointer-events-none z-0">
-          <Image
-            src={supabaseImg(
-              "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/Adobe%20Express%20-%20file%20(1).png",
-              { width: 320, quality: 80 },
-            )}
-            alt=""
-            fill
-            sizes="(max-width: 768px) 192px, 256px"
-            className="object-cover object-center"
-            aria-hidden
-          />
-          {/* Subtle dark fade */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(to right, rgba(0,0,0,0.4), rgba(0,0,0,0))",
-            }}
-          />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
+      <footer className="border-t border-neutral-100 py-8">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-6">
             {[
               { href: "/#shops", label: "Shops" },
