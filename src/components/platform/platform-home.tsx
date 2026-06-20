@@ -560,8 +560,8 @@ function GlobeHeroCanvas() {
     const FOCUS_HOLD_MS = 3000; // image stays fully visible
     const FOCUS_GAP_MS = 250; // breather between images
     const AMBIENT_ROTATE_SPEED = 0.0006; // slow drift once inside
-    const STAGE_RIGHT_OFFSET = 2.4;
-    const STAGE_UP_OFFSET = 0.2;
+    let STAGE_RIGHT_OFFSET = 2.4;
+    let STAGE_UP_OFFSET = 0.2;
     const STAGE_FORWARD_DIST = 4.2;
     const STAGE_SCALE = 1.9;
 
@@ -600,6 +600,12 @@ function GlobeHeroCanvas() {
       const isNarrow = window.innerWidth < 900;
       globeGroup.position.x = isNarrow ? 0 : GLOBE_RADIUS * 0.5;
       globeGroup.position.y = isNarrow ? 1.5 : 0.4;
+
+      // On narrow viewports the focused/flying image must stay centered —
+      // a fixed right-offset (correct on wide desktop screens) pushes it
+      // past the edge of a narrow frame, where it's only partially visible.
+      STAGE_RIGHT_OFFSET = isNarrow ? 0 : 2.4;
+      STAGE_UP_OFFSET = isNarrow ? 0.4 : 0.2;
     }
     positionGlobeForViewport();
 
@@ -1017,15 +1023,15 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       <PlatformNavbar stores={stores} />
 
       {/* ── Hero ── */}
-      <section className="pt-[32px] h-screen min-h-[640px] flex items-start sm:items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[32px] min-h-[560px] sm:h-screen sm:min-h-[640px] flex items-start sm:items-center bg-[#0A0A0A] text-white relative overflow-hidden">
         <GlobeHeroCanvas />
 
-        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 pt-20 sm:pt-8 pb-8 md:py-6">
+        <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 pt-16 sm:pt-8 pb-6 sm:pb-8 md:py-6">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col gap-8 max-w-xl"
+            className="flex flex-col gap-5 sm:gap-8 max-w-xl"
           >
             <div className="flex flex-col gap-4">
               <span className="text-xs uppercase tracking-[0.3em] text-white/50">
