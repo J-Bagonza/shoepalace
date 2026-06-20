@@ -1034,8 +1034,8 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             className="flex flex-col gap-5 sm:gap-8 max-w-xl"
           >
             <div className="flex flex-col gap-4">
-              <span className="text-xs uppercase tracking-[0.3em] text-white/50">
-                Kenya&apos;s Premier Footwear Marketplace
+              <span className="text-xs uppercase tracking-[0.4em] text-white/50">
+                The Footwear Marketplace
               </span>
               <h1 className="font-bebas text-[36px] sm:text-[56px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
                 Every Shoe.<br />
@@ -1085,7 +1085,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-16">
             <div>
               <span className="text-[10px] uppercase tracking-[0.25em] text-neutral-400 mb-3 block">
-                The platform
+                A platform
               </span>
               <h2 className="font-bebas text-5xl md:text-6xl tracking-wide text-neutral-900 leading-none">
                 Built for Kenya&apos;s<br />shoe market
