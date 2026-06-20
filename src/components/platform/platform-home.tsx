@@ -668,7 +668,7 @@ function GlobeHeroCanvas() {
           targetRestOpacity: 0.5,
           phase: null,
           phaseStart: 0,
-          aspectScale: { x: 1, y: 1 },
+          aspectScale: { x: 1.3, y: 1.3 },
         };
         tiles.push(tile);
 
@@ -685,18 +685,24 @@ function GlobeHeroCanvas() {
               // are displayed smaller than their native resolution.
               texture.minFilter = THREE.LinearMipmapLinearFilter;
 
-              // Fit the image's true aspect ratio inside the 1.3 x 1.3 base
-              // plane (equivalent to CSS object-contain) instead of letting
-              // Three.js stretch it to fill the square — this is what was
-              // causing images to appear zoomed/cropped.
+              // Fit the image's true aspect ratio inside a consistent
+              // bounding box (equivalent to CSS object-contain) instead of
+              // always anchoring one axis at 1 — anchoring one axis caused
+              // landscape photos to render as narrow vertical strips once
+              // scaled up during the focused "held" stage.
               const imgW = texture.image?.width ?? 1;
               const imgH = texture.image?.height ?? 1;
               const aspect = imgW / imgH;
+              const BOX = 1.3; // target box edge length, matches base plane
               tile.aspectScale =
                 aspect >= 1
-                  ? { x: 1, y: 1 / aspect }
-                  : { x: aspect, y: 1 };
-              mesh.scale.set(tile.aspectScale.x, tile.aspectScale.y, 1);
+                  ? { x: BOX, y: BOX / aspect }
+                  : { x: BOX * aspect, y: BOX };
+              mesh.scale.set(
+                tile.aspectScale.x / size,
+                tile.aspectScale.y / size,
+                1,
+              );
 
               const mat = new THREE.MeshBasicMaterial({
                 map: texture,
@@ -859,8 +865,8 @@ function GlobeHeroCanvas() {
         tile.mesh.quaternion.copy(restQuat).slerp(camera.quaternion, e);
         const sIn = 1 + e * (STAGE_SCALE - 1);
         tile.mesh.scale.set(
-          tile.aspectScale.x * sIn,
-          tile.aspectScale.y * sIn,
+          (tile.aspectScale.x / 1.3) * sIn,
+          (tile.aspectScale.y / 1.3) * sIn,
           1,
         );
         mat.opacity = tile.targetRestOpacity + (1 - tile.targetRestOpacity) * e;
@@ -872,8 +878,8 @@ function GlobeHeroCanvas() {
         tile.mesh.position.copy(computeStageWorldPosition());
         tile.mesh.quaternion.copy(camera.quaternion);
         tile.mesh.scale.set(
-          tile.aspectScale.x * STAGE_SCALE,
-          tile.aspectScale.y * STAGE_SCALE,
+          (tile.aspectScale.x / 1.3) * STAGE_SCALE,
+          (tile.aspectScale.y / 1.3) * STAGE_SCALE,
           1,
         );
         mat.opacity = 1;
@@ -888,8 +894,8 @@ function GlobeHeroCanvas() {
         tile.mesh.quaternion.copy(camera.quaternion).slerp(restTransform.quat, e);
         const sOut = STAGE_SCALE - e * (STAGE_SCALE - 1);
         tile.mesh.scale.set(
-          tile.aspectScale.x * sOut,
-          tile.aspectScale.y * sOut,
+          (tile.aspectScale.x / 1.3) * sOut,
+          (tile.aspectScale.y / 1.3) * sOut,
           1,
         );
         mat.opacity = 1 - (1 - tile.targetRestOpacity) * e;
@@ -898,7 +904,11 @@ function GlobeHeroCanvas() {
         if (t >= 1) {
           tile.phase = null;
           reattachToGlobe(tile);
-          tile.mesh.scale.set(tile.aspectScale.x, tile.aspectScale.y, 1);
+          tile.mesh.scale.set(
+            tile.aspectScale.x / 1.3,
+            tile.aspectScale.y / 1.3,
+            1,
+          );
           mat.opacity = tile.targetRestOpacity;
           mat.fog = true;
         }
@@ -1007,7 +1017,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       <PlatformNavbar stores={stores} />
 
       {/* ── Hero ── */}
-      <section className="pt-[40px] h-screen min-h-[640px] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[56px] h-screen min-h-[640px] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
         <GlobeHeroCanvas />
 
         <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-6">
