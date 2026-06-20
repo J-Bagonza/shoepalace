@@ -460,20 +460,20 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
       <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
         <div className="flex items-center gap-3">
           {store.tenant.logo_url ? (
-            <div className="relative h-8 w-8 overflow-hidden rounded-sm bg-white border border-neutral-100">
-              <Image
-                src={supabaseImg(store.tenant.logo_url, { width: 64, quality: 85 })}
-                alt={store.tenant.name}
-                fill
-                sizes="32px"
-                className="object-contain p-0.5"
-              />
-            </div>
-          ) : (
-            <div className="h-8 w-8 bg-neutral-900 flex items-center justify-center">
-              <span className="text-white text-xs font-bold uppercase">{store.tenant.name.charAt(0)}</span>
-            </div>
-          )}
+  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-white border border-neutral-100 p-1.5">
+    <Image
+      src={store.tenant.logo_url}
+      alt={store.tenant.name}
+      fill
+      sizes="36px"
+      className="object-contain"
+    />
+  </div>
+) : (
+  <div className="h-9 w-9 shrink-0 bg-neutral-900 flex items-center justify-center">
+    <span className="text-white text-xs font-bold uppercase">{store.tenant.name.charAt(0)}</span>
+  </div>
+)}
           <div className="flex flex-col gap-0">
             <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-neutral-900 hover:text-[#E8001D] transition-colors leading-tight">
               {store.tenant.name}
@@ -1063,7 +1063,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             <div className="flex items-center gap-5 sm:gap-8 pt-4 border-t border-white/10 flex-wrap">
               {[
                 { value: stores.length.toString(), label: "Active Stores" },
-                { value: "Kenya", label: "Market" },
+                { value: "Kenyan", label: "Market" },
                 { value: "M-Pesa", label: "Payments" },
               ].map((stat) => (
                 <div key={stat.label} className="flex flex-col gap-0.5">
