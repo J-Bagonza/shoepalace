@@ -508,7 +508,7 @@ const HERO_IMAGE_URLS = Array.from(
   (_, i) =>
     `${SUPABASE_BASE}/storage/v1/render/image/public/product-images/hero/sp%20(${
       i + 1
-    }).jpg?width=400&quality=78`,
+    }).jpg?width=800&quality=80`,
 );
 
 // THREE is loaded dynamically so all Three.js object types are typed as `any`
@@ -524,6 +524,7 @@ interface GlobeTile {
   phaseStart: number;
   restTransform?: { pos: V3; quat: V3 };
   outStartPos?: V3;
+  aspectScale: { x: number; y: number };
 }
 
 function easeInOutCubic(t: number) {
@@ -667,6 +668,7 @@ function GlobeHeroCanvas() {
           targetRestOpacity: 0.5,
           phase: null,
           phaseStart: 0,
+          aspectScale: { x: 1, y: 1 },
         };
         tiles.push(tile);
 
@@ -682,6 +684,20 @@ function GlobeHeroCanvas() {
               // Use LinearMipmapLinearFilter for better quality when textures
               // are displayed smaller than their native resolution.
               texture.minFilter = THREE.LinearMipmapLinearFilter;
+
+              // Fit the image's true aspect ratio inside the 1.3 x 1.3 base
+              // plane (equivalent to CSS object-contain) instead of letting
+              // Three.js stretch it to fill the square — this is what was
+              // causing images to appear zoomed/cropped.
+              const imgW = texture.image?.width ?? 1;
+              const imgH = texture.image?.height ?? 1;
+              const aspect = imgW / imgH;
+              tile.aspectScale =
+                aspect >= 1
+                  ? { x: 1, y: 1 / aspect }
+                  : { x: aspect, y: 1 };
+              mesh.scale.set(tile.aspectScale.x, tile.aspectScale.y, 1);
+
               const mat = new THREE.MeshBasicMaterial({
                 map: texture,
                 transparent: true,
@@ -841,7 +857,12 @@ function GlobeHeroCanvas() {
 
         tile.mesh.position.copy(restPos).lerp(stagePos, e);
         tile.mesh.quaternion.copy(restQuat).slerp(camera.quaternion, e);
-        tile.mesh.scale.setScalar(1 + e * (STAGE_SCALE - 1));
+        const sIn = 1 + e * (STAGE_SCALE - 1);
+        tile.mesh.scale.set(
+          tile.aspectScale.x * sIn,
+          tile.aspectScale.y * sIn,
+          1,
+        );
         mat.opacity = tile.targetRestOpacity + (1 - tile.targetRestOpacity) * e;
         mat.fog = false; // left the globe now, no depth-fog while "on stage"
 
@@ -850,7 +871,11 @@ function GlobeHeroCanvas() {
         // fixed in world space, dead-on to the camera
         tile.mesh.position.copy(computeStageWorldPosition());
         tile.mesh.quaternion.copy(camera.quaternion);
-        tile.mesh.scale.setScalar(STAGE_SCALE);
+        tile.mesh.scale.set(
+          tile.aspectScale.x * STAGE_SCALE,
+          tile.aspectScale.y * STAGE_SCALE,
+          1,
+        );
         mat.opacity = 1;
         mat.fog = false;
       } else if (tile.phase === "out") {
@@ -861,14 +886,19 @@ function GlobeHeroCanvas() {
 
         tile.mesh.position.copy(stagePos).lerp(restTransform.pos, e);
         tile.mesh.quaternion.copy(camera.quaternion).slerp(restTransform.quat, e);
-        tile.mesh.scale.setScalar(STAGE_SCALE - e * (STAGE_SCALE - 1));
+        const sOut = STAGE_SCALE - e * (STAGE_SCALE - 1);
+        tile.mesh.scale.set(
+          tile.aspectScale.x * sOut,
+          tile.aspectScale.y * sOut,
+          1,
+        );
         mat.opacity = 1 - (1 - tile.targetRestOpacity) * e;
         mat.fog = e > 0.6;
 
         if (t >= 1) {
           tile.phase = null;
           reattachToGlobe(tile);
-          tile.mesh.scale.setScalar(1);
+          tile.mesh.scale.set(tile.aspectScale.x, tile.aspectScale.y, 1);
           mat.opacity = tile.targetRestOpacity;
           mat.fog = true;
         }
@@ -977,7 +1007,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       <PlatformNavbar stores={stores} />
 
       {/* ── Hero ── */}
-      <section className="pt-[56px] h-screen min-h-[640px] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[40px] h-screen min-h-[640px] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
         <GlobeHeroCanvas />
 
         <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-6">
