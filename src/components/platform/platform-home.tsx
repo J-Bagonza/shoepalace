@@ -419,20 +419,20 @@ function ProductCarousel({
             rel="noopener noreferrer"
             className="flex-shrink-0 w-36 group"
           >
-            <div className="relative aspect-square bg-white overflow-hidden mb-2 border border-neutral-100">
-              {product.image_url ? (
-                <Image
-                  src={supabaseImg(product.image_url, { width: 288, quality: 82 })}
-                  alt={product.name}
-                  fill
-                  sizes="144px"
-                  className="object-contain group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full bg-[#F5F0E8]" />
-              )}
-            </div>
+            <div className="relative aspect-square bg-white overflow-hidden mb-2 border border-neutral-100 p-3">
+  {product.image_url ? (
+    <Image
+      src={supabaseImg(product.image_url, { width: 288, quality: 82 })}
+      alt={product.name}
+      fill
+      sizes="144px"
+      className="object-contain group-hover:scale-105 transition-transform duration-300"
+      loading="lazy"
+    />
+  ) : (
+    <div className="w-full h-full bg-white" />
+  )}
+</div>
             <p className="text-[11px] font-medium text-neutral-900 truncate">{product.name}</p>
             <p className="text-[11px] text-neutral-500">{formatPrice(product.price, currency)}</p>
           </a>
@@ -1097,7 +1097,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
           </div>
 
           {/* Steps */}
-          <div className="grid md:grid-cols-3 gap-px bg-neutral-200">
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
                 num: "01",
@@ -1238,7 +1238,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         <div className="absolute inset-0 lg:inset-y-[-8%] lg:right-0 lg:left-[25%]">
   <Image
     src={supabaseImg(
-      "https://hisgmvazdmtgjuep",
+      "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2020,%202026,%2002_18_26%20PM.png",
       { width: 1400, quality: 80 },
     )}
     alt=""
@@ -1282,7 +1282,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
                 <span>→</span>
               </Link>
               <p className="text-[10px] text-white/30 uppercase tracking-widest">
-                Free to apply · Reviewed by hand
+                Free to apply · Reviewed by Us
               </p>
             </div>
           </motion.div>
