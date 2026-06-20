@@ -508,7 +508,7 @@ const HERO_IMAGE_URLS = Array.from(
   (_, i) =>
     `${SUPABASE_BASE}/storage/v1/render/image/public/product-images/hero/sp%20(${
       i + 1
-    }).jpg?width=800&quality=80`,
+    }).jpg?width=800&height=1120&resize=contain&quality=80`,
 );
 
 // THREE is loaded dynamically so all Three.js object types are typed as `any`
