@@ -422,12 +422,11 @@ function ProductCarousel({
             <div className="relative aspect-square bg-white overflow-hidden mb-2 border border-neutral-100 p-3">
   {product.image_url ? (
     <Image
-      src={supabaseImg(product.image_url, { width: 288, quality: 82 })}
+      src={product.image_url}
       alt={product.name}
       fill
       sizes="144px"
       className="object-contain group-hover:scale-105 transition-transform duration-300"
-      loading="lazy"
     />
   ) : (
     <div className="w-full h-full bg-white" />
