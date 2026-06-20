@@ -32,7 +32,6 @@ const CONFIGS = {
     analytics: true,
   }),
 
-  
   admin: new Ratelimit({
     redis: getRedis(),
     limiter: Ratelimit.slidingWindow(300, "1 m"),
@@ -55,10 +54,28 @@ const CONFIGS = {
     prefix: "rl:upload",
     analytics: true,
   }),
+
+  // Per-recipient email limiting — prevents email bombing
+  // a single address regardless of attacker IP
+  emailTarget: new Ratelimit({
+    redis: getRedis(),
+    limiter: Ratelimit.slidingWindow(3, "1 h"),
+    prefix: "rl:email-target",
+    analytics: true,
+  }),
+
+  // Global circuit breaker — caps total app-wide email sends per hour.
+  // Protects against a distributed attack using many different
+  // recipient addresses, each individually under the emailTarget limit.
+  emailGlobal: new Ratelimit({
+    redis: getRedis(),
+    limiter: Ratelimit.slidingWindow(500, "1 h"),
+    prefix: "rl:email-global",
+    analytics: true,
+  }),
 } as const;
 
 export type RateLimitConfig = keyof typeof CONFIGS;
-
 
 export function getClientIp(req: Request): string {
   return (
@@ -67,7 +84,6 @@ export function getClientIp(req: Request): string {
     "unknown"
   );
 }
-
 
 export function getRateLimitIdentifier(
   req: Request,
@@ -80,12 +96,10 @@ export function getRateLimitIdentifier(
     case "auth":
     case "api":
     case "search":
-      
       return ip;
 
     case "admin":
     case "upload":
-      
       return `${ip}:${tenantId}`;
 
     default:
@@ -105,6 +119,31 @@ export async function checkRateLimit(
   const limiter = CONFIGS[config];
   const identifier = getRateLimitIdentifier(req, config);
 
+  const result = await limiter.limit(identifier);
+
+  return {
+    success: result.success,
+    limit: result.limit,
+    remaining: result.remaining,
+    reset: result.reset,
+  };
+}
+
+/**
+ * Limits by an arbitrary identifier rather than a Request object.
+ * Used for non-HTTP-route contexts like sendEmail(), which is called
+ * from fire-and-forget background tasks, not directly from a route handler.
+ */
+export async function checkRateLimitByKey(
+  config: RateLimitConfig,
+  identifier: string,
+): Promise<{
+  success: boolean;
+  limit: number;
+  remaining: number;
+  reset: number;
+}> {
+  const limiter = CONFIGS[config];
   const result = await limiter.limit(identifier);
 
   return {
