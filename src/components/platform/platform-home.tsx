@@ -508,7 +508,7 @@ const HERO_IMAGE_URLS = Array.from(
   (_, i) =>
     `${SUPABASE_BASE}/storage/v1/render/image/public/product-images/hero/sp%20(${
       i + 1
-    }).jpg?width=800&height=1120&resize=contain&quality=80`,
+    }).jpg?width=800&height=1120&resize=contain&quality=72&format=webp`,
 );
 
 // THREE is loaded dynamically so all Three.js object types are typed as `any`
@@ -1017,7 +1017,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       <PlatformNavbar stores={stores} />
 
       {/* ── Hero ── */}
-      <section className="pt-[56px] h-screen min-h-[640px] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
+      <section className="pt-[32px] h-screen min-h-[640px] flex items-center bg-[#0A0A0A] text-white relative overflow-hidden">
         <GlobeHeroCanvas />
 
         <div className="relative z-10 mx-auto max-w-7xl w-full px-6 lg:px-8 py-8 md:py-6">
