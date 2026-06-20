@@ -1238,7 +1238,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         <div className="absolute inset-0 lg:inset-y-[-8%] lg:right-0 lg:left-[25%]">
   <Image
     src={supabaseImg(
-      "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/818f929e-6d8e-4a0e-b54e-cb053585fde5.png",
+      "https://hisgmvazdmtgjuep",
       { width: 1400, quality: 80 },
     )}
     alt=""

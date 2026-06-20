@@ -48,35 +48,30 @@ export function Footer() {
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-16">
-          {/* Brand — image sits behind this column only */}
-          <div className="col-span-2 md:col-span-1 relative flex flex-col
-            justify-end gap-3 overflow-hidden rounded-sm h-[220px] p-5">
-            <Image
-              src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2020,%202026,%2001_52_47%20PM.png?width=400&height=500&resize=cover&quality=80"
-              alt=""
-              fill
-              sizes="(max-width: 768px) 50vw, 280px"
-              className="object-cover object-center"
-              aria-hidden
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.25))",
-              }}
-            />
-            <Link
-              href="/"
-              className="relative z-10 font-bebas text-2xl tracking-wider text-white
-                hover:text-[#E8001D] transition-colors"
-            >
-              {tenant.name}
-            </Link>
-            <p className="relative z-10 text-xs text-white/70 leading-relaxed max-w-[200px]">
-              Precision-crafted footwear for those who move with purpose.
-            </p>
-          </div>
+{/* Brand — transparent PNG sits directly on the footer background,
+    no container/border, so it blends naturally */}
+<div className="col-span-2 md:col-span-1 relative flex flex-col
+  justify-end gap-3 min-h-[220px]">
+  <Image
+    src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2020,%202026,%2001_52_47%20PM.png?width=400&quality=90"
+    alt=""
+    width={260}
+    height={300}
+    className="absolute top-0 left-0 w-full max-w-[220px] h-auto
+      object-contain opacity-90 pointer-events-none select-none"
+    aria-hidden
+  />
+  <Link
+    href="/"
+    className="relative z-10 font-bebas text-2xl tracking-wider text-white
+      hover:text-[#E8001D] transition-colors"
+  >
+    {tenant.name}
+  </Link>
+  <p className="relative z-10 text-xs text-white/70 leading-relaxed max-w-[200px]">
+    Precision-crafted footwear for those who move with purpose.
+  </p>
+</div>
 
           {/* Shop */}
           <div className="flex flex-col gap-4">
