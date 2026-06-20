@@ -1336,33 +1336,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer className="border-t border-neutral-100 py-8">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-6">
-            {[
-              { href: "/#shops", label: "Shops" },
-              { href: "/#how-it-works", label: "About" },
-              { href: "/#contact", label: "Contact" },
-              { href: "/register-store", label: "Open a Store" },
-            ].map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-[10px] uppercase tracking-widest text-neutral-500 hover:text-neutral-900 transition-colors"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-
-          <p className="text-[10px] text-neutral-500 uppercase tracking-widest">
-            {new Date().getFullYear()} ShoePalace. Kenya&apos;s footwear marketplace.
-          </p>
-        </div>
-      </footer>
+      </section> 
     </div>
   );
 }

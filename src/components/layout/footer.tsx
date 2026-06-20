@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useTenant } from "@/lib/tenant/context";
 
 const FOOTER_LINKS = {
@@ -47,16 +48,32 @@ export function Footer() {
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 lg:gap-16">
-          {/* Brand */}
-          <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
+          {/* Brand — image sits behind this column only */}
+          <div className="col-span-2 md:col-span-1 relative flex flex-col
+            gap-4 overflow-hidden rounded-sm min-h-[160px] p-5 -m-5">
+            <Image
+              src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/render/image/public/product-images/platform/Adobe%20Express%20-%20file%20(1).png?width=400&quality=80"
+              alt=""
+              fill
+              sizes="(max-width: 768px) 50vw, 280px"
+              className="object-cover object-center -z-10"
+              aria-hidden
+            />
+            <div
+              className="absolute inset-0 -z-10"
+              style={{
+                background:
+                  "linear-gradient(to top, rgba(0,0,0,0.85), rgba(0,0,0,0.55))",
+              }}
+            />
             <Link
               href="/"
-              className="font-bebas text-2xl tracking-wider text-white
+              className="relative font-bebas text-2xl tracking-wider text-white
                 hover:text-[#E8001D] transition-colors"
             >
               {tenant.name}
             </Link>
-            <p className="text-xs text-white/40 leading-relaxed max-w-[200px]">
+            <p className="relative text-xs text-white/70 leading-relaxed max-w-[200px]">
               Precision-crafted footwear for those who move with purpose.
             </p>
           </div>
