@@ -172,7 +172,7 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
   className="flex items-center hover:opacity-80 transition-opacity"
 >
   <Image
-    src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2022,%202026,%2010_28_12%20AM.png"
+    src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2022,%202026,%2012_05_14%20PM.png"
     alt="ShoePalace"
     width={1024}
     height={1024}
