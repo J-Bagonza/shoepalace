@@ -177,7 +177,7 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
     width={1024}
     height={1024}
     priority
-    className="h-[69px] sm:h-[70px] md:h-[76px] w-auto object-contain"
+    className="h-[71px] sm:h-[72px] md:h-[78px] w-auto object-contain"
   />
 </Link>
 
