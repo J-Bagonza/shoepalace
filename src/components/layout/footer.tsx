@@ -39,7 +39,7 @@ export function Footer() {
               className="font-bebas text-lg tracking-widest text-white/20
                 mx-8 shrink-0"
             >
-              PRECISION CRAFTED &nbsp; FREE SHIPPING OVER £100 &nbsp;
+              PRECISION CRAFTED &nbsp; FREE SHIPPING MAY BE PROVIDED &nbsp;
               PREMIUM FOOTWEAR &nbsp; EST. MMXXIV
             </span>
           ))}
