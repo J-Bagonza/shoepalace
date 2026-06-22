@@ -1,6 +1,6 @@
 # ShoePalace
 
-A multi-tenant e-commerce marketplace for Kenya's footwear market. Independent stores run on their own subdomain (`storename.shoepalace.store`); the bare domain (`shoepalace.store`) is a directory that lists and links to every active store. One platform admin reviews and approves new stores; each store's own admin manages only their own products, orders, and settings.
+A multi-tenant e-commerce marketplace for the footwear market. Independent stores run on their own subdomain (`storename.shoepalace.store`); the bare domain (`shoepalace.store`) is a directory that lists and links to every active store. One platform admin reviews and approves new stores; each store's own admin manages only their own products, orders, and settings.
 
 ## Stack
 
