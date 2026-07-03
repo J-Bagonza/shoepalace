@@ -19,14 +19,59 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://shoepalace.store",
+  ),
   title: {
     template: "%s | ShoePalace",
-    default: "ShoePalace — Premium Footwear",
+    default: "ShoePalace — Kenya's Premier Footwear Marketplace",
   },
-  description: "Precision-crafted footwear for those who move with purpose.",
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-  ),
+  description:
+    "Browse verified shoe stores across Kenya. Shop running, lifestyle, hiking and casual footwear from independent vendors. Pay via M-Pesa.",
+  keywords: [
+    "shoes Kenya",
+    "footwear Kenya",
+    "buy shoes online Kenya",
+    "M-Pesa shoe store",
+    "running shoes Nairobi",
+    "sneakers Kenya",
+    "Jordan Kenya",
+    "Nike Kenya",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "en_KE",
+    url: "https://shoepalace.store",
+    siteName: "ShoePalace",
+    title: "ShoePalace — Kenya's Premier Footwear Marketplace",
+    description:
+      "Browse verified shoe stores across Kenya. Shop running, lifestyle and hiking footwear. Pay via M-Pesa.",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "ShoePalace — Kenya's Footwear Marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ShoePalace — Kenya's Premier Footwear Marketplace",
+    description:
+      "Browse verified shoe stores across Kenya. Pay via M-Pesa.",
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 // Fallback tenant for local dev / direct Vercel URL access
