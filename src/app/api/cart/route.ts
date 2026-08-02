@@ -5,6 +5,7 @@ import { addCartItemSchema } from "@/lib/validations/cart";
 import { withRateLimit } from "@/lib/security/with-rate-limit";
 import { requireAuth } from "@/lib/security/with-auth";
 import { createRequestLogger } from "@/lib/logger/request-logger";
+import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import type { ApiResponse } from "@/types/api";
 import type { CartItem } from "@/types/cart";
 
@@ -73,17 +74,25 @@ async function getHandler(req: Request): Promise<Response> {
   const auth = await requireAuth(req);
   if (auth instanceof Response) return auth;
 
+  // Scope cart to current tenant — a customer who shops on multiple
+  // stores should see only the current store's cart, not a merged one.
+  const tenantId = getTenantIdFromHeaders();
   const supabase = createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from("cart_items")
     .select(CART_SELECT)
     .eq("user_id", auth.userId)
+    .eq("tenant_id", tenantId)
     .returns<RawCartRow[]>();
 
   if (error) {
     log.error({ requestId, event: "cart.get.error" }, error.message);
-    const body: ApiResponse = { data: null, error: "Failed to fetch cart.", status: 500 };
+    const body: ApiResponse = {
+      data: null,
+      error: "Failed to fetch cart.",
+      status: 500,
+    };
     return Response.json(body, { status: 500 });
   }
 
@@ -91,7 +100,11 @@ async function getHandler(req: Request): Promise<Response> {
   const total = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
   const item_count = items.reduce((sum, i) => sum + i.quantity, 0);
 
-  const body: ApiResponse<{ items: CartItem[]; total: number; item_count: number }> = {
+  const body: ApiResponse<{
+    items: CartItem[];
+    total: number;
+    item_count: number;
+  }> = {
     data: { items, total, item_count },
     error: null,
     status: 200,
@@ -109,20 +122,36 @@ async function addHandler(req: Request): Promise<Response> {
   if (!validation.success) return validation.response;
 
   const { variant_id, quantity } = validation.data;
+  const tenantId = getTenantIdFromHeaders();
   const admin = createAdminSupabaseClient();
 
+  // Verify variant exists, belongs to this tenant, and product is active
   const { data: variant, error: variantError } = await admin
     .from("product_variants")
-    .select("id, stock, products!inner(deleted_at)")
+    .select("id, stock, products!inner(deleted_at, tenant_id)")
     .eq("id", variant_id)
     .single<{
       id: string;
       stock: number;
-      products: { deleted_at: string | null };
+      products: { deleted_at: string | null; tenant_id: string };
     }>();
 
   if (variantError || !variant) {
-    const body: ApiResponse = { data: null, error: "Variant not found.", status: 404 };
+    const body: ApiResponse = {
+      data: null,
+      error: "Variant not found.",
+      status: 404,
+    };
+    return Response.json(body, { status: 404 });
+  }
+
+  // SECURITY: prevent adding items from a different tenant's products
+  if (variant.products.tenant_id !== tenantId) {
+    const body: ApiResponse = {
+      data: null,
+      error: "Variant not found.",
+      status: 404,
+    };
     return Response.json(body, { status: 404 });
   }
 
@@ -136,7 +165,11 @@ async function addHandler(req: Request): Promise<Response> {
   }
 
   if (variant.stock < quantity) {
-    const body: ApiResponse = { data: null, error: "Insufficient stock.", status: 409 };
+    const body: ApiResponse = {
+      data: null,
+      error: "Insufficient stock.",
+      status: 409,
+    };
     return Response.json(body, { status: 409 });
   }
 
@@ -147,13 +180,18 @@ async function addHandler(req: Request): Promise<Response> {
     .select("id, quantity")
     .eq("user_id", auth.userId)
     .eq("variant_id", variant_id)
+    .eq("tenant_id", tenantId)
     .single<{ id: string; quantity: number }>();
 
   if (existing) {
     const newQty = Math.min(existing.quantity + quantity, 99);
 
     if (newQty > variant.stock) {
-      const body: ApiResponse = { data: null, error: "Insufficient stock.", status: 409 };
+      const body: ApiResponse = {
+        data: null,
+        error: "Insufficient stock.",
+        status: 409,
+      };
       return Response.json(body, { status: 409 });
     }
 
@@ -162,29 +200,50 @@ async function addHandler(req: Request): Promise<Response> {
       .from("cart_items")
       .update({ quantity: newQty })
       .eq("id", existing.id)
-      .eq("user_id", auth.userId) as { error: { message: string } | null };
+      .eq("user_id", auth.userId)
+      .eq("tenant_id", tenantId) as { error: { message: string } | null };
 
     if (error) {
-      log.error({ requestId, event: "cart.add.update.error" }, error.message);
-      const body: ApiResponse = { data: null, error: "Failed to update cart.", status: 500 };
+      log.error(
+        { requestId, event: "cart.add.update.error" },
+        error.message,
+      );
+      const body: ApiResponse = {
+        data: null,
+        error: "Failed to update cart.",
+        status: 500,
+      };
       return Response.json(body, { status: 500 });
     }
   } else {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from("cart_items")
-      .insert({ user_id: auth.userId, variant_id, quantity }) as {
-      error: { message: string } | null;
-    };
+      .insert({
+        user_id: auth.userId,
+        variant_id,
+        quantity,
+        tenant_id: tenantId,
+      }) as { error: { message: string } | null };
 
     if (error) {
-      log.error({ requestId, event: "cart.add.insert.error" }, error.message);
-      const body: ApiResponse = { data: null, error: "Failed to add to cart.", status: 500 };
+      log.error(
+        { requestId, event: "cart.add.insert.error" },
+        error.message,
+      );
+      const body: ApiResponse = {
+        data: null,
+        error: "Failed to add to cart.",
+        status: 500,
+      };
       return Response.json(body, { status: 500 });
     }
   }
 
-  log.info({ requestId, event: "cart.add.success" }, "Item added to cart");
+  log.info(
+    { requestId, event: "cart.add.success", tenantId },
+    "Item added to cart",
+  );
 
   const body: ApiResponse<{ message: string }> = {
     data: { message: "Item added to cart." },
