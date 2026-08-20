@@ -5,8 +5,6 @@ import Image from "next/image";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-// THREE is imported dynamically inside GlobeHeroCanvas to keep it out of the
-// initial JS bundle — it's ~600 KB and not needed until the hero mounts.
 import { formatPrice } from "@/utils/product";
 import { createClient } from "@/lib/supabase/client";
 import type { StoreWithProducts } from "@/lib/platform/fetch-stores-directory";
