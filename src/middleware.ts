@@ -9,6 +9,35 @@ export async function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID();
   const hostname = request.headers.get("host") ?? "localhost";
 
+  // ── WAF SECRET CHECK ──────────────────────────────────────────
+  // Once the WAF is live, every legitimate request arrives with
+  // this header set by the WAF proxy. Requests missing it are
+  // hitting Vercel's origin directly, bypassing the WAF entirely.
+  //
+  // IMPORTANT: only enforce this in production AND only after the
+  // WAF DNS cutover is complete — enforcing it before the WAF is
+  // live will lock everyone out including you.
+  //
+  // Set WAF_ENFORCE=true in Vercel env vars AFTER the WAF is live.
+  // ─────────────────────────────────────────────────────────────
+  const wafSecret = process.env.WAF_SECRET;
+  const enforceWaf = process.env.WAF_ENFORCE === "true";
+
+  if (enforceWaf && wafSecret) {
+    const incomingSecret = request.headers.get("x-waf-secret");
+
+    if (incomingSecret !== wafSecret) {
+      return new NextResponse(
+        JSON.stringify({ error: "Forbidden." }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+  }
+  // ─────────────────────────────────────────────────────────────
+
   // =============================================
   // TENANT RESOLUTION
   // - vercel.app preview URLs → default to ShoePalace
@@ -21,7 +50,6 @@ export async function middleware(request: NextRequest) {
     hostname === "localhost" || hostname.startsWith("localhost:");
   const isRootDomain =
     hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}`;
-
   const subdomain =
     isVercelApp || isLocalhost || isRootDomain
       ? SHOEPALACE_SLUG
@@ -66,11 +94,9 @@ export async function middleware(request: NextRequest) {
               headers: request.headers,
             },
           });
-
           response.headers.set("x-request-id", requestId);
           response.headers.set("x-tenant-id", tenant.id);
           response.headers.set("x-tenant-slug", tenant.slug);
-
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, {
               ...options,
@@ -89,7 +115,6 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-
   const isAdminRoute = pathname.startsWith("/admin");
   const isAuthRoute =
     pathname.startsWith("/login") || pathname.startsWith("/signup");
