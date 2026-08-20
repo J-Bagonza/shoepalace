@@ -172,10 +172,13 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
   className="flex items-center hover:opacity-80 transition-opacity"
 >
   <Image
-    src="https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/SPlogo.png"
+    src={supabaseImg(
+      "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/SPlogo.png",
+      { width: 280, quality: 90 },
+    )}
     alt="ShoePalace"
-    width={1024}
-    height={1024}
+    width={280}
+    height={280}
     priority
     className="h-[62px] sm:h-[64px] md:h-[68px] w-auto object-contain"
   />
