@@ -4,6 +4,7 @@ import { updateCartItemSchema, cartItemParamsSchema } from "@/lib/validations/ca
 import { withRateLimit } from "@/lib/security/with-rate-limit";
 import { requireAuth } from "@/lib/security/with-auth";
 import { createRequestLogger } from "@/lib/logger/request-logger";
+import { getTenantIdFromHeaders } from "@/lib/tenant/server-tenant";
 import type { ApiResponse } from "@/types/api";
 
 function getParams(context?: Record<string, unknown>) {
@@ -19,7 +20,10 @@ async function updateHandler(
   const auth = await requireAuth(req);
   if (auth instanceof Response) return auth;
 
-  const paramValidation = validateParams(getParams(context), cartItemParamsSchema);
+  const paramValidation = validateParams(
+    getParams(context),
+    cartItemParamsSchema,
+  );
   if (!paramValidation.success) return paramValidation.response;
 
   const { id } = paramValidation.data;
@@ -28,18 +32,25 @@ async function updateHandler(
   if (!bodyValidation.success) return bodyValidation.response;
 
   const { quantity } = bodyValidation.data;
+  const tenantId = getTenantIdFromHeaders();
   const supabase = createServerSupabaseClient();
 
-  // SECURITY: bind both id AND user_id — prevents IDOR
+  // SECURITY: bind id + user_id + tenant_id
+  // Prevents IDOR and cross-tenant cart manipulation
   const { data: existing } = await supabase
     .from("cart_items")
     .select("id")
     .eq("id", id)
     .eq("user_id", auth.userId)
+    .eq("tenant_id", tenantId)
     .single<{ id: string }>();
 
   if (!existing) {
-    const body: ApiResponse = { data: null, error: "Cart item not found.", status: 404 };
+    const body: ApiResponse = {
+      data: null,
+      error: "Cart item not found.",
+      status: 404,
+    };
     return Response.json(body, { status: 404 });
   }
 
@@ -48,15 +59,23 @@ async function updateHandler(
     .from("cart_items")
     .update({ quantity })
     .eq("id", id)
-    .eq("user_id", auth.userId) as { error: { message: string } | null };
+    .eq("user_id", auth.userId)
+    .eq("tenant_id", tenantId) as { error: { message: string } | null };
 
   if (error) {
     log.error({ requestId, event: "cart.update.error" }, error.message);
-    const body: ApiResponse = { data: null, error: "Failed to update cart.", status: 500 };
+    const body: ApiResponse = {
+      data: null,
+      error: "Failed to update cart.",
+      status: 500,
+    };
     return Response.json(body, { status: 500 });
   }
 
-  log.info({ requestId, event: "cart.update.success", id }, "Cart item updated");
+  log.info(
+    { requestId, event: "cart.update.success", id },
+    "Cart item updated",
+  );
 
   const body: ApiResponse<{ message: string }> = {
     data: { message: "Cart updated." },
@@ -75,22 +94,32 @@ async function deleteHandler(
   const auth = await requireAuth(req);
   if (auth instanceof Response) return auth;
 
-  const paramValidation = validateParams(getParams(context), cartItemParamsSchema);
+  const paramValidation = validateParams(
+    getParams(context),
+    cartItemParamsSchema,
+  );
   if (!paramValidation.success) return paramValidation.response;
 
   const { id } = paramValidation.data;
+  const tenantId = getTenantIdFromHeaders();
   const supabase = createServerSupabaseClient();
 
-  // SECURITY: user_id bind prevents IDOR deletion
+  // SECURITY: bind id + user_id + tenant_id
+  // Prevents IDOR deletion and cross-tenant cart manipulation
   const { data: existing } = await supabase
     .from("cart_items")
     .select("id")
     .eq("id", id)
     .eq("user_id", auth.userId)
+    .eq("tenant_id", tenantId)
     .single<{ id: string }>();
 
   if (!existing) {
-    const body: ApiResponse = { data: null, error: "Cart item not found.", status: 404 };
+    const body: ApiResponse = {
+      data: null,
+      error: "Cart item not found.",
+      status: 404,
+    };
     return Response.json(body, { status: 404 });
   }
 
@@ -98,15 +127,23 @@ async function deleteHandler(
     .from("cart_items")
     .delete()
     .eq("id", id)
-    .eq("user_id", auth.userId);
+    .eq("user_id", auth.userId)
+    .eq("tenant_id", tenantId);
 
   if (error) {
     log.error({ requestId, event: "cart.delete.error" }, error.message);
-    const body: ApiResponse = { data: null, error: "Failed to remove item.", status: 500 };
+    const body: ApiResponse = {
+      data: null,
+      error: "Failed to remove item.",
+      status: 500,
+    };
     return Response.json(body, { status: 500 });
   }
 
-  log.info({ requestId, event: "cart.delete.success", id }, "Cart item removed");
+  log.info(
+    { requestId, event: "cart.delete.success", id },
+    "Cart item removed",
+  );
 
   const body: ApiResponse<{ message: string }> = {
     data: { message: "Item removed from cart." },

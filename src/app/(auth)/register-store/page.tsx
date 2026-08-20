@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -41,10 +41,17 @@ export default function RegisterStorePage() {
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // Timing token — set on mount, base64-encoded timestamp.
+  // Sent with the form so the server can reject submissions that
+  // arrive in under 3 seconds (bots fill forms instantly).
+  const formTokenRef = useRef<string>("");
+  useEffect(() => {
+    formTokenRef.current = Buffer.from(String(Date.now())).toString("base64");
+  }, []);
+
   function set(key: keyof FormValues, value: string) {
     setValues((prev) => {
       const next = { ...prev, [key]: value };
-      // Auto-generate slug from store name unless manually edited
       if (key === "store_name" && !slugManuallyEdited) {
         next.slug = slugify(value);
       }
@@ -105,6 +112,11 @@ export default function RegisterStorePage() {
           owner_email: values.owner_email,
           phone: values.phone || undefined,
           description: values.description || undefined,
+          // Honeypot — real users never fill this (it's hidden via CSS).
+          // Value is always empty string from the controlled input below.
+          website: "",
+          // Timing token — lets the server reject instant submissions.
+          form_token: formTokenRef.current,
         }),
       });
 
@@ -204,6 +216,37 @@ export default function RegisterStorePage() {
             noValidate
             className="flex flex-col gap-5"
           >
+            {/*
+              HONEYPOT — visually hidden from real users via CSS.
+              Screen readers also skip it via aria-hidden.
+              Bots that fill every field will populate this and be
+              silently rejected server-side.
+            */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                width: "1px",
+                height: "1px",
+                overflow: "hidden",
+                opacity: 0,
+                pointerEvents: "none",
+                tabIndex: -1,
+              } as React.CSSProperties}
+            >
+              <label htmlFor="website">Website</label>
+              <input
+                id="website"
+                name="website"
+                type="text"
+                autoComplete="off"
+                tabIndex={-1}
+                defaultValue=""
+                readOnly
+              />
+            </div>
+
             <fieldset className="flex flex-col gap-4">
               <legend className="text-[10px] uppercase tracking-widest
                 text-neutral-400 mb-1">
