@@ -8,13 +8,13 @@ node_modules/
 out/
 build/
 
-# Env files 
+# Env files — never commit secrets
 .env
 .env.local
 .env.production
 .env.staging
 
-# example
+# Keep example safe
 !.env.example
 
 # Logs

@@ -4,7 +4,6 @@ import {
   fetchSingleProduct,
   fetchRelatedProducts,
 } from "@/lib/products/fetch-single-product";
-import { getTenantFromHeaders } from "@/lib/tenant/server-tenant";
 import { ProductDetail } from "@/components/product/product-detail";
 
 interface PageProps {
@@ -14,49 +13,21 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const [product, tenant] = await Promise.all([
-    fetchSingleProduct(params.slug),
-    getTenantFromHeaders(),
-  ]);
+  const product = await fetchSingleProduct(params.slug);
 
   if (!product) {
     return { title: "Product Not Found" };
   }
 
-  const rootDomain =
-    process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "shoepalace.store";
-  const storeUrl = tenant
-    ? `https://${tenant.slug}.${rootDomain}`
-    : `https://${rootDomain}`;
-  const productUrl = `${storeUrl}/products/${product.slug}`;
-  const primaryImage = product.images?.[0];
-  const storeName = tenant?.name ?? "ShoePalace";
-
   return {
     title: product.name,
-    description: product.description.slice(0, 155),
+    description: product.description.slice(0, 160),
     openGraph: {
-      type: "website",
-      url: productUrl,
-      siteName: storeName,
-      title: `${product.name} | ${storeName}`,
-      description: product.description.slice(0, 155),
-      images: primaryImage
-        ? [
-            {
-              url: primaryImage.url,
-              alt: primaryImage.alt || product.name,
-              width: 800,
-              height: 800,
-            },
-          ]
+      title: product.name,
+      description: product.description.slice(0, 160),
+      images: product.images?.[0]
+        ? [{ url: product.images[0].url, alt: product.images[0].alt }]
         : [],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: `${product.name} | ${storeName}`,
-      description: product.description.slice(0, 155),
-      images: primaryImage ? [primaryImage.url] : [],
     },
   };
 }
