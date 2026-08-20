@@ -173,7 +173,7 @@ function PlatformNavbar({ stores }: { stores: StoreWithProducts[] }) {
 >
   <Image
     src={supabaseImg(
-      "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/SPlogo.png",
+      "https://hisgmvazdmtgjuepuqit.supabase.co/storage/v1/object/public/product-images/platform/ChatGPT%20Image%20Jun%2022,%202026,%2004_59_23%20PM.png",
       { width: 280, quality: 90 },
     )}
     alt="ShoePalace"
@@ -432,11 +432,12 @@ function ProductCarousel({
             <div className="relative aspect-square bg-white overflow-hidden mb-2 border border-neutral-100 p-3">
   {product.image_url ? (
     <Image
-      src={product.image_url}
+      src={supabaseImg(product.image_url, { width: 288, quality: 82 })}
       alt={product.name}
       fill
       sizes="144px"
       className="object-contain group-hover:scale-105 transition-transform duration-300"
+      loading="lazy"
     />
   ) : (
     <div className="w-full h-full bg-white" />
@@ -472,7 +473,7 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
           {store.tenant.logo_url ? (
   <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-white border border-neutral-100 p-1.5">
     <Image
-      src={store.tenant.logo_url}
+      src={supabaseImg(store.tenant.logo_url, { width: 72, quality: 85 })}
       alt={store.tenant.name}
       fill
       sizes="36px"
@@ -517,7 +518,9 @@ const HERO_IMAGE_URLS = Array.from(
   (_, i) =>
     `${SUPABASE_BASE}/storage/v1/render/image/public/product-images/hero/sp%20(${
       i + 1
-    }).jpg?width=800&height=1120&resize=contain&quality=72&format=webp`,
+    // width=400, no height/resize — those params letterbox into a fixed box
+    // making texture.image report wrong dimensions and breaking aspect ratio.
+    }).jpg?width=400&quality=75&format=webp`,
 );
 
 // THREE is loaded dynamically so all Three.js object types are typed as `any`
@@ -536,8 +539,12 @@ interface GlobeTile {
   aspectScale: { x: number; y: number };
 }
 
+// easeInOutQuint — gentler than cubic, removes snap at start/end of tile flight
+// Revert to cubic: t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2
 function easeInOutCubic(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  return t < 0.5
+    ? 16 * t * t * t * t * t
+    : 1 - Math.pow(-2 * t + 2, 5) / 2;
 }
 
 function GlobeHeroCanvas() {
@@ -565,9 +572,9 @@ function GlobeHeroCanvas() {
     const TILE_COUNT = 90;
     const ORBIT_DURATION_MS = 5000; // phase 1: establishing orbit shot
     const DIVE_DURATION_MS = 2200; // phase 2: camera flies to the center
-    const FOCUS_TRANSITION_MS = 1100; // ease an image in / out
-    const FOCUS_HOLD_MS = 3000; // image stays fully visible
-    const FOCUS_GAP_MS = 250; // breather between images
+    const FOCUS_TRANSITION_MS = 1600; // ease in/out  (was 1100)
+    const FOCUS_HOLD_MS = 3200;       // hold time    (was 3000)
+    const FOCUS_GAP_MS = 400;         // gap between  (was 250)
     const AMBIENT_ROTATE_SPEED = 0.0006; // slow drift once inside
     let STAGE_RIGHT_OFFSET = 2.4;
     let STAGE_UP_OFFSET = 0.2;
@@ -659,11 +666,14 @@ function GlobeHeroCanvas() {
       // but load textures in prioritised batches to avoid 90 simultaneous
       // network requests on mount. The first 9 unique images load right away
       // so the globe looks alive quickly; the rest trickle in after 800 ms.
-      const IMMEDIATE_BATCH = 9;
+      // First 6 load immediately; rest trickle in every 300ms in groups of 6
+      const IMMEDIATE_BATCH = 6;
+      const BATCH_SIZE = 6;
+      const BATCH_INTERVAL_MS = 300;
 
       points.forEach((pos, i) => {
         const placeholderMat = new THREE.MeshBasicMaterial({
-          color: 0x2a2a2a,
+          color: 0x1e1e1e,
           transparent: true,
           opacity: 0.0,
           side: THREE.DoubleSide,
@@ -700,24 +710,18 @@ function GlobeHeroCanvas() {
               // are displayed smaller than their native resolution.
               texture.minFilter = THREE.LinearMipmapLinearFilter;
 
-              // Fit the image's true aspect ratio inside a consistent
-              // bounding box (equivalent to CSS object-contain) instead of
-              // always anchoring one axis at 1 — anchoring one axis caused
-              // landscape photos to render as narrow vertical strips once
-              // scaled up during the focused "held" stage.
+              // Store true aspect for when tile flies to the stage.
+              // Globe tiles stay square (scale 1,1,1) so they tessellate cleanly.
               const imgW = texture.image?.width ?? 1;
               const imgH = texture.image?.height ?? 1;
               const aspect = imgW / imgH;
-              const BOX = 1.3; // target box edge length, matches base plane
+              const BOX = 1.3;
               tile.aspectScale =
                 aspect >= 1
                   ? { x: BOX, y: BOX / aspect }
                   : { x: BOX * aspect, y: BOX };
-              mesh.scale.set(
-                tile.aspectScale.x / size,
-                tile.aspectScale.y / size,
-                1,
-              );
+              // Keep square on globe; true aspect applied only when staged
+              mesh.scale.set(1, 1, 1);
 
               const mat = new THREE.MeshBasicMaterial({
                 map: texture,
@@ -729,7 +733,7 @@ function GlobeHeroCanvas() {
               mesh.material = mat;
               loadedCount++;
               tile.targetRestOpacity = 0.45 + Math.random() * 0.25;
-              animateOpacity(mat, tile.targetRestOpacity, 900);
+              animateOpacity(mat, tile.targetRestOpacity, 1200); // slow fade so tiles don't pop
 
               if (loadedCount === 1 && statusRef.current) {
                 statusRef.current.textContent = "globe ready";
@@ -746,9 +750,8 @@ function GlobeHeroCanvas() {
         if (i < IMMEDIATE_BATCH) {
           loadTile();
         } else {
-          // Stagger the rest: batch every 9 tiles with 250 ms between batches
-          const batchDelay = Math.floor((i - IMMEDIATE_BATCH) / 9) * 250 + 800;
-          schedule(loadTile, batchDelay);
+          const batch = Math.floor((i - IMMEDIATE_BATCH) / BATCH_SIZE);
+          schedule(loadTile, BATCH_INTERVAL_MS * (batch + 1));
         }
       });
     }
@@ -789,6 +792,15 @@ function GlobeHeroCanvas() {
 
     function startFocusCycle() {
       if (sequenceState !== "inside" || cancelled) return;
+
+      // ── Mobile guard ───────────────────────────────────────
+      // Uncomment to disable tile fly-out on small screens (globe still spins).
+      // Toggle freely for A/B testing / user feedback.
+      // if (window.innerWidth < 1024) {
+      //   schedule(startFocusCycle, 2000);
+      //   return;
+      // }
+      // ──────────────────────────────────────────
 
       const next = pickNextFocusTile();
       if (!next) {
@@ -914,7 +926,7 @@ function GlobeHeroCanvas() {
           1,
         );
         mat.opacity = 1 - (1 - tile.targetRestOpacity) * e;
-        mat.fog = e > 0.6;
+        mat.fog = e > 0.85; // delay fog — tile stays crisp until almost back
 
         if (t >= 1) {
           tile.phase = null;
