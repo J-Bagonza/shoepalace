@@ -1088,33 +1088,22 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
     aria-hidden
     className="absolute inset-0 flex flex-col justify-center pointer-events-none select-none overflow-hidden gap-2 md:gap-4"
   >
-    <div
-      className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight bg-clip-text text-transparent opacity-[0.07]"
-      style={{
-        backgroundImage: "linear-gradient(90deg, #0A0A0A 0%, #0A0A0A 40%, #E8001D 100%)",
-        marginLeft: "2vw",
-      }}
-    >
-      VERIFIED
-    </div>
-    <div
-      className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight bg-clip-text text-transparent opacity-[0.07]"
-      style={{
-        backgroundImage: "linear-gradient(90deg, #0A0A0A 0%, #0A0A0A 40%, #E8001D 100%)",
-        marginLeft: "16vw",
-      }}
-    >
-      DIRECT
-    </div>
-    <div
-      className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight bg-clip-text text-transparent opacity-[0.07]"
-      style={{
-        backgroundImage: "linear-gradient(90deg, #0A0A0A 0%, #0A0A0A 40%, #E8001D 100%)",
-        marginLeft: "30vw",
-      }}
-    >
-      INSTANT
-    </div>
+    {["VERIFIED", "DIRECT", "INSTANT"].map((word, i) => (
+      <div
+        key={word}
+        className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight bg-clip-text text-transparent opacity-[0.14]"
+        style={{
+          backgroundImage: "linear-gradient(90deg, #0A0A0A 0%, #0A0A0A 45%, #E8001D 100%)",
+          backgroundSize: "60vw 100%",
+          backgroundPosition: "right",
+          backgroundRepeat: "no-repeat",
+          WebkitBackgroundClip: "text",
+          marginLeft: `${2 + i * 14}vw`,
+        }}
+      >
+        {word}
+      </div>
+    ))}
   </div>
 
   <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
@@ -1221,7 +1210,6 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
     </div>
   </div>
 </section>
-
       {/* ── Shops directory ── */}
       <section id="shops" className="py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
