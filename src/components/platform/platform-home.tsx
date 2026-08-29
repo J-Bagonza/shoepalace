@@ -1038,9 +1038,9 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             className="flex flex-col gap-5 sm:gap-8 max-w-xl"
           >
             <div className="flex flex-col gap-4">
-              <span className="text-xs uppercase tracking-[0.3em] text-white/50">
-                The Footwear Marketplace
-              </span>
+              <span className="font-kranky text-xs uppercase tracking-[0.3em] text-white/50">
+  The Footwear Marketplace
+</span>
               <h1 className="font-kablammo text-[36px] sm:text-[56px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
   <span className="text-white">Every </span>
   <span className="text-[#E8001D]">Shoe.</span>
