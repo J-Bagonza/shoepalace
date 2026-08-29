@@ -1038,7 +1038,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
             className="flex flex-col gap-5 sm:gap-8 max-w-xl"
           >
             <div className="flex flex-col gap-4">
-              <span className="font-yellowtail text-xs uppercase tracking-[0.3em] text-white/50">
+              <span className="font-bebas text-xs uppercase tracking-[0.3em] text-white/50">
   The Footwear Marketplace
 </span>
               <h1 className="font-kablammo text-[36px] sm:text-[56px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
