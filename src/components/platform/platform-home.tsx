@@ -459,80 +459,44 @@ function StoreCard({ store }: { store: StoreWithProducts }) {
       transition={{ duration: 0.4 }}
       className={clsx(
         "border bg-white overflow-hidden transition-all",
-        store.is_featured
-          ? "border-neutral-900 shadow-sm"
-          : "border-neutral-100",
+        store.is_featured ? "border-neutral-900 shadow-sm" : "border-neutral-100",
       )}
     >
-      <div className="flex items-center justify-between px-5 py-4
-        border-b border-neutral-100">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
         <div className="flex items-center gap-3">
-
-          {/* Logo or initial avatar */}
           {store.tenant.logo_url ? (
-            <div className="relative h-9 w-9 shrink-0 overflow-hidden
-              rounded-sm bg-white border border-neutral-100 p-1.5">
-              <Image
-                src={store.tenant.logo_url}
-                alt={store.tenant.name}
-                fill
-                sizes="36px"
-                className="object-contain"
-              />
-            </div>
-          ) : (
-            <div className="h-9 w-9 shrink-0 bg-neutral-900 flex
-              items-center justify-center">
-              <span className="text-white text-xs font-bold uppercase">
-                {store.tenant.name.charAt(0)}
-              </span>
-            </div>
-          )}
-
-          {/* Store name + slug */}
+  <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-white border border-neutral-100 p-1.5">
+    <Image
+      src={store.tenant.logo_url}
+      alt={store.tenant.name}
+      fill
+      sizes="36px"
+      className="object-contain"
+    />
+  </div>
+) : (
+  <div className="h-9 w-9 shrink-0 bg-neutral-900 flex items-center justify-center">
+    <span className="text-white text-xs font-bold uppercase">{store.tenant.name.charAt(0)}</span>
+  </div>
+)}
           <div className="flex flex-col gap-0">
-            
-              href={storeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-yellowtail text-xl text-neutral-900
-                hover:text-[#E8001D] transition-colors leading-tight"
-            >
+            <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="font-yellowtail text-sm text-neutral-900 hover:text-[#E8001D] transition-colors leading-tight">
               {store.tenant.name}
             </a>
-            <span className="font-yellowtail text-[11px] text-neutral-400">
-              {store.tenant.slug}.shoepalace.store
-            </span>
+            <span className="font-yellowtail text-[10px] text-neutral-400">{store.tenant.slug}.shoepalace.store</span>
           </div>
         </div>
-
-        {/* Right side — featured badge + visit link */}
-        <div className="flex items-center gap-2 shrink-0">
-          {store.is_featured && (
-            <span className="text-[10px] uppercase tracking-widest
-              text-[#E8001D] border border-[#E8001D] px-2 py-0.5">
-              Featured
-            </span>
-          )}
-          
-            href={storeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] uppercase tracking-widest text-neutral-400
-              hover:text-neutral-900 transition-colors"
-          >
-            Visit →
-          </a>
-        </div>
+        <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="text-[10px] uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors">
+          Visit →
+        </a>
+        {store.is_featured && (
+          <span className="text-[10px] uppercase tracking-widest text-[#E8001D] border border-[#E8001D] px-2 py-0.5 shrink-0">
+            Featured
+          </span>
+        )}
       </div>
-
-      {/* Product carousel */}
       <div className="px-5 py-4">
-        <ProductCarousel
-          products={store.products}
-          storeSlug={store.tenant.slug}
-          currency={store.currency}
-        />
+        <ProductCarousel products={store.products} storeSlug={store.tenant.slug} currency={store.currency} />
       </div>
     </motion.div>
   );
