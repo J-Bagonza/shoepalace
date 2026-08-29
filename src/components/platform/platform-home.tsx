@@ -1082,61 +1082,119 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       </section>
 
       {/* ── About / How It Works ── */}
-<section id="how-it-works" className="bg-[#0A0A0A] text-white py-20 md:py-32 relative overflow-hidden">
-  {/* Giant faint background type — echoes hero without repeating it */}
+<section id="how-it-works" className="bg-[#F5F0E8] py-20 md:py-28 overflow-hidden relative">
+  {/* Faint giant type in the background — subtle on light, not competing with cards */}
   <div
     aria-hidden
     className="absolute inset-0 flex items-center pointer-events-none select-none overflow-hidden"
   >
-    <div className="font-bebas text-white/[0.04] leading-[0.82] text-[16vw] whitespace-nowrap -ml-6 tracking-tight">
-      VERIFIED<br />DIRECT<br />INSTANT
+    <div className="font-bebas text-neutral-900/[0.03] leading-[0.82] text-[16vw] whitespace-nowrap -ml-6 tracking-tight">
+      VERIFIED · DIRECT · INSTANT
     </div>
   </div>
 
   <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-      className="max-w-xl ml-auto flex flex-col gap-6"
-    >
-      <div className="flex items-center gap-3">
-        <span className="h-px w-8 bg-[#E8001D]" />
-        <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">
-          A Platform
-        </span>
+
+    {/* Header row */}
+    <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-16">
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <span className="h-px w-8 bg-[#E8001D]" />
+          <span className="text-[10px] uppercase tracking-[0.25em] text-neutral-400">
+            A Platform
+          </span>
+        </div>
+        <h2 className="font-bebas text-5xl md:text-6xl tracking-wide text-neutral-900 leading-none">
+          Built for Kenya&apos;s<br />
+          <span className="text-[#E8001D]">Shoe Market.</span>
+        </h2>
       </div>
-
-      <h2 className="font-bebas text-5xl md:text-6xl leading-[0.95] tracking-wide">
-        Built for Kenya&apos;s{" "}
-        <span className="text-[#E8001D]">Shoe Market.</span>
-      </h2>
-
-      <p className="text-sm text-white/50 leading-relaxed max-w-md">
-        Every store is independently run, reviewed by our team, and powered
-        by a shared infrastructure — so the experience is consistent
-        wherever you shop.
+      <p className="text-sm text-neutral-500 max-w-sm leading-relaxed md:text-right">
+        Every store is independently run, reviewed by our team, and powered by a shared infrastructure — so the experience is consistent wherever you shop.
       </p>
+    </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 mt-2 border-t border-white/10">
-        {[
-          { value: "01", label: "Browse verified stores" },
-          { value: "02", label: "Order direct from source" },
-          { value: "03", label: "Pay with M-Pesa" },
-          { value: "24h", label: "Application review" },
-        ].map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-1">
-            <span className="font-bebas text-3xl text-white">
-              {stat.value}
-            </span>
-            <span className="text-[10px] uppercase tracking-widest text-white/40 leading-snug">
-              {stat.label}
+    {/* Cards — 01–04 */}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+      {[
+        {
+          num: "01",
+          title: "Browse verified stores",
+          detail: "Verified sellers",
+          accent: "#C2542D", // terracotta
+          accentSoft: "#C2542D22",
+          accentSoftHover: "#C2542D40",
+        },
+        {
+          num: "02",
+          title: "Order direct from source",
+          detail: "Nationwide delivery",
+          accent: "#6B7F5C", // sage
+          accentSoft: "#6B7F5C22",
+          accentSoftHover: "#6B7F5C40",
+        },
+        {
+          num: "03",
+          title: "Pay with M-Pesa",
+          detail: "Instant confirmation",
+          accent: "#C99A3E", // ochre
+          accentSoft: "#C99A3E22",
+          accentSoftHover: "#C99A3E40",
+        },
+        {
+          num: "04",
+          title: "Application review",
+          detail: "Within 24 hours",
+          accent: "#E8001D", // brand red — ties card grid back to logo/CTA color
+          accentSoft: "#E8001D1F",
+          accentSoftHover: "#E8001D38",
+        },
+      ].map((item, idx) => (
+        <motion.div
+          key={item.num}
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: idx * 0.08 }}
+          className="relative bg-white border border-neutral-100 p-5 md:p-7 flex flex-col gap-4 md:gap-5 group overflow-hidden"
+        >
+          <div
+            className="absolute -top-8 -right-8 w-24 h-24 rounded-full transition-all duration-500 pointer-events-none"
+            style={{ backgroundColor: item.accentSoft }}
+          />
+          <div
+            className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+            style={{ backgroundColor: item.accentSoftHover }}
+          />
+
+          <div className="relative flex items-start justify-between">
+            <span
+              className="font-bebas text-4xl md:text-5xl leading-none"
+              style={{ color: item.accent }}
+            >
+              {item.num}
             </span>
           </div>
-        ))}
-      </div>
-    </motion.div>
+
+          <div className="relative flex flex-col gap-2 flex-1">
+            <h3 className="text-sm font-medium text-neutral-900 leading-snug">
+              {item.title}
+            </h3>
+            <span
+              className="text-[9px] uppercase tracking-widest w-fit px-2 py-0.5 border"
+              style={{ color: item.accent, borderColor: item.accent }}
+            >
+              {item.detail}
+            </span>
+          </div>
+
+          <div
+            className="relative h-[2px] transition-all duration-300"
+            style={{ backgroundColor: item.accent }}
+          />
+        </motion.div>
+      ))}
+    </div>
   </div>
 </section>
 
