@@ -1083,25 +1083,23 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
       {/* ── About / How It Works ── */}
 <section id="how-it-works" className="bg-[#F5F0E8] py-20 md:py-28 overflow-hidden relative">
-  {/* Faint giant type in the background — staircase layout, black→red gradient */}
+  {/* Faint giant type in the background — staircase layout, split black/red per word */}
   <div
     aria-hidden
     className="absolute inset-0 flex flex-col justify-center pointer-events-none select-none overflow-hidden gap-2 md:gap-4"
   >
-    {["VERIFIED", "DIRECT", "INSTANT"].map((word, i) => (
+    {[
+      { black: "VERI", red: "FIED", indent: 2 },
+      { black: "DIR", red: "ECT", indent: 16 },
+      { black: "INS", red: "TANT", indent: 30 },
+    ].map((word) => (
       <div
-        key={word}
-        className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight bg-clip-text text-transparent opacity-[0.14]"
-        style={{
-          backgroundImage: "linear-gradient(90deg, #0A0A0A 0%, #0A0A0A 45%, #E8001D 100%)",
-          backgroundSize: "60vw 100%",
-          backgroundPosition: "right",
-          backgroundRepeat: "no-repeat",
-          WebkitBackgroundClip: "text",
-          marginLeft: `${2 + i * 14}vw`,
-        }}
+        key={word.black + word.red}
+        className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight"
+        style={{ marginLeft: `${word.indent}vw` }}
       >
-        {word}
+        <span className="text-neutral-900 opacity-[0.07]">{word.black}</span>
+        <span className="text-[#E8001D] opacity-[0.14]">{word.red}</span>
       </div>
     ))}
   </div>
