@@ -63,7 +63,7 @@ export function Footer() {
   />
   <Link
     href="/"
-    className="relative z-10 font-bebas text-2xl tracking-wider text-white
+    className="relative z-10 font-yellowtail text-2xl tracking-wider text-white
       hover:text-[#E8001D] transition-colors"
   >
     {tenant.name}
