@@ -43,7 +43,7 @@ function TenantLogo() {
   return (
     <Link
       href="/"
-      className="font-bebas text-2xl tracking-wider text-neutral-900
+      className="font-lavish text-4xl text-neutral-900
         hover:text-[#E8001D] transition-colors duration-200"
     >
       {tenant.name}
