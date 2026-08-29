@@ -1083,13 +1083,37 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
 
       {/* ── About / How It Works ── */}
 <section id="how-it-works" className="bg-[#F5F0E8] py-20 md:py-28 overflow-hidden relative">
-  {/* Faint giant type in the background — subtle on light, not competing with cards */}
+  {/* Faint giant type in the background — staircase layout, black→red gradient */}
   <div
     aria-hidden
-    className="absolute inset-0 flex items-center pointer-events-none select-none overflow-hidden"
+    className="absolute inset-0 flex flex-col justify-center pointer-events-none select-none overflow-hidden gap-2 md:gap-4"
   >
-    <div className="font-bebas text-neutral-900/[0.03] leading-[0.82] text-[16vw] whitespace-nowrap -ml-6 tracking-tight">
-      VERIFIED · DIRECT · INSTANT
+    <div
+      className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight bg-clip-text text-transparent opacity-[0.07]"
+      style={{
+        backgroundImage: "linear-gradient(90deg, #0A0A0A 0%, #0A0A0A 40%, #E8001D 100%)",
+        marginLeft: "2vw",
+      }}
+    >
+      VERIFIED
+    </div>
+    <div
+      className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight bg-clip-text text-transparent opacity-[0.07]"
+      style={{
+        backgroundImage: "linear-gradient(90deg, #0A0A0A 0%, #0A0A0A 40%, #E8001D 100%)",
+        marginLeft: "16vw",
+      }}
+    >
+      DIRECT
+    </div>
+    <div
+      className="font-bebas leading-[0.82] text-[13vw] md:text-[10vw] tracking-tight bg-clip-text text-transparent opacity-[0.07]"
+      style={{
+        backgroundImage: "linear-gradient(90deg, #0A0A0A 0%, #0A0A0A 40%, #E8001D 100%)",
+        marginLeft: "30vw",
+      }}
+    >
+      INSTANT
     </div>
   </div>
 
