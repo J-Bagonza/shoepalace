@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, DM_Sans, Kablammo } from "next/font/google";
+import { Bebas_Neue, DM_Sans, Kablammo, Kranky, Lavishly_Yours } from "next/font/google";
 import "./globals.css";
 import { TenantProvider } from "@/lib/tenant/context";
 import { getTenantFromHeaders } from "@/lib/tenant/server-tenant";
@@ -22,6 +22,20 @@ const kablammo = Kablammo({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-kablammo",
+  display: "swap",
+});
+
+const kranky = Kranky({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-kranky",
+  display: "swap",
+});
+
+const lavishlyYours = Lavishly_Yours({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-lavish",
   display: "swap",
 });
 
@@ -102,7 +116,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bebasNeue.variable} ${dmSans.variable} ${kablammo.variable}`}
+      className={`${bebasNeue.variable} ${dmSans.variable} ${kablammo.variable} ${kranky.variable} ${lavishlyYours.variable}`}
     >
       <body className="font-dm bg-white text-neutral-900 antialiased">
         <TenantProvider tenant={tenant}>
