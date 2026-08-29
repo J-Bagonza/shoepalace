@@ -1041,10 +1041,13 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
               <span className="text-xs uppercase tracking-[0.3em] text-white/50">
                 The Footwear Marketplace
               </span>
-              <h1 className="font-bebas text-[36px] sm:text-[56px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
-                Every Shoe.<br />
-                Every Store.
-              </h1>
+              <h1 className="font-kablammo text-[36px] sm:text-[56px] md:text-[108px] leading-none tracking-tight whitespace-nowrap">
+  <span className="text-white">Every </span>
+  <span className="text-[#E8001D]">Shoe.</span>
+  <br />
+  <span className="text-white">Every </span>
+  <span className="text-[#E8001D]">Store.</span>
+</h1>
               <p className="text-sm text-white/55 max-w-md leading-relaxed">
                 ShoePalace connects Kenya&apos;s best footwear stores with customers who care about quality. Browse stores, discover exclusive drops, and shop directly from verified vendors.
               </p>
