@@ -19,6 +19,10 @@ const config: Config = {
       fontFamily: {
         bebas: ["var(--font-bebas)", "sans-serif"],
         dm: ["var(--font-dm-sans)", "sans-serif"],
+        kablammo: ["var(--font-kablammo)", "cursive"],
+        kranky: ["var(--font-kranky)", "cursive"],
+        lavish: ["var(--font-lavish)", "cursive"],
+        yellowtail: ["var(--font-yellowtail)", "cursive"],
       },
       fontSize: {
         "display-xl": ["clamp(4rem, 10vw, 9rem)", { lineHeight: "0.95" }],
