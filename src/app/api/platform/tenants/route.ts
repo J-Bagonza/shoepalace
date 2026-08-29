@@ -67,8 +67,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   const slugs = (data ?? []).map((row: { slug: string }) => row.slug);
 
-  return NextResponse.json({
-    slugs,
-    generated_at: new Date().toISOString(),
-  });
+  return NextResponse.json(
+    {
+      slugs,
+      generated_at: new Date().toISOString(),
+    },
+    {
+      headers: {
+        // force-dynamic (above) stops Next.js from statically
+        // pre-rendering this route, but that's a build-time concern —
+        // it does NOT stop an HTTP-level cache (Vercel's edge, or any
+        // proxy between the WAF and Vercel) from caching and replaying
+        // this specific response. Without this header, a cached stale
+        // tenant list would silently defeat the WAF's one-cycle
+        // stale-subdomain detection window with no visible error.
+        "Cache-Control": "no-store",
+      },
+    },
+  );
 }
