@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Bebas_Neue, DM_Sans } from "next/font/google";
+import { Bebas_Neue, DM_Sans, Kablammo } from "next/font/google";
 import "./globals.css";
 import { TenantProvider } from "@/lib/tenant/context";
 import { getTenantFromHeaders } from "@/lib/tenant/server-tenant";
@@ -15,6 +15,13 @@ const bebasNeue = Bebas_Neue({
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-dm-sans",
+  display: "swap",
+});
+
+const kablammo = Kablammo({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-kablammo",
   display: "swap",
 });
 
@@ -93,7 +100,10 @@ export default async function RootLayout({
   const tenant = await getTenantFromHeaders() ?? FALLBACK_TENANT;
 
   return (
-    <html lang="en" className={`${bebasNeue.variable} ${dmSans.variable}`}>
+    <html
+      lang="en"
+      className={`${bebasNeue.variable} ${dmSans.variable} ${kablammo.variable}`}
+    >
       <body className="font-dm bg-white text-neutral-900 antialiased">
         <TenantProvider tenant={tenant}>
           {children}
