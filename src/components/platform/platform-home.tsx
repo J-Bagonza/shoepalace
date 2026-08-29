@@ -1081,118 +1081,64 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section id="how-it-works" className="bg-[#F5F0E8] py-20 md:py-28 overflow-hidden">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      {/* ── About / How It Works ── */}
+<section id="how-it-works" className="bg-[#0A0A0A] text-white py-20 md:py-32 relative overflow-hidden">
+  {/* Giant faint background type — echoes hero without repeating it */}
+  <div
+    aria-hidden
+    className="absolute inset-0 flex items-center pointer-events-none select-none overflow-hidden"
+  >
+    <div className="font-bebas text-white/[0.04] leading-[0.82] text-[16vw] whitespace-nowrap -ml-6 tracking-tight">
+      VERIFIED<br />DIRECT<br />INSTANT
+    </div>
+  </div>
 
-          {/* Header row */}
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-16">
-            <div>
-              <span className="text-[10px] uppercase tracking-[0.25em] text-neutral-400 mb-3 block">
-                A platform
-              </span>
-              <h2 className="font-bebas text-5xl md:text-6xl tracking-wide text-neutral-900 leading-none">
-                Built for Kenya&apos;s<br />shoe market
-              </h2>
-            </div>
-            <p className="text-sm text-neutral-500 max-w-sm leading-relaxed md:text-right">
-              Every store is independently run, reviewed by our team, and powered by a shared infrastructure — so the experience is consistent wherever you shop.
-            </p>
+  <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5 }}
+      className="max-w-xl ml-auto flex flex-col gap-6"
+    >
+      <div className="flex items-center gap-3">
+        <span className="h-px w-8 bg-[#E8001D]" />
+        <span className="text-[10px] uppercase tracking-[0.25em] text-white/40">
+          A Platform
+        </span>
+      </div>
+
+      <h2 className="font-bebas text-5xl md:text-6xl leading-[0.95] tracking-wide">
+        Built for Kenya&apos;s{" "}
+        <span className="text-[#E8001D]">Shoe Market.</span>
+      </h2>
+
+      <p className="text-sm text-white/50 leading-relaxed max-w-md">
+        Every store is independently run, reviewed by our team, and powered
+        by a shared infrastructure — so the experience is consistent
+        wherever you shop.
+      </p>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 mt-2 border-t border-white/10">
+        {[
+          { value: "01", label: "Browse verified stores" },
+          { value: "02", label: "Order direct from source" },
+          { value: "03", label: "Pay with M-Pesa" },
+          { value: "24h", label: "Application review" },
+        ].map((stat) => (
+          <div key={stat.label} className="flex flex-col gap-1">
+            <span className="font-bebas text-3xl text-white">
+              {stat.value}
+            </span>
+            <span className="text-[10px] uppercase tracking-widest text-white/40 leading-snug">
+              {stat.label}
+            </span>
           </div>
-
-          {/* Steps */}
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-            {[
-              {
-                num: "01",
-                title: "Browse verified stores",
-                body: "Every store on ShoePalace has been reviewed before going live. No pop-ups, no noise — just real sellers with real stock.",
-                detail: "Verified sellers only",
-                accent: "#C2542D", // terracotta
-                accentSoft: "#C2542D33",
-                accentSoftHover: "#C2542D55",
-                circle: "absolute -top-10 -right-10 w-32 h-32",
-              },
-              {
-                num: "02",
-                title: "Order direct from the source",
-                body: "Visit any store, browse their full catalogue, and place your order. Each store manages its own inventory and fulfilment.",
-                detail: "Nationwide delivery",
-                accent: "#6B7F5C", // sage
-                accentSoft: "#6B7F5C33",
-                accentSoftHover: "#6B7F5C55",
-                circle: "absolute -bottom-12 -left-8 w-36 h-36",
-              },
-              {
-                num: "03",
-                title: "Pay with M-Pesa",
-                body: "No card required. Every store accepts M-Pesa and you get a confirmation the moment payment goes through.",
-                detail: "Instant confirmation",
-                accent: "#C99A3E", // ochre
-                accentSoft: "#C99A3E33",
-                accentSoftHover: "#C99A3E55",
-                circle: "absolute top-1/2 -right-14 -translate-y-1/2 w-28 h-28",
-              },
-            ].map((item, idx) => (
-              <motion.div
-                key={item.num}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.45, delay: idx * 0.1 }}
-                className="relative bg-[#F5F0E8] p-8 md:p-10 flex flex-col gap-6 group overflow-hidden"
-              >
-                {/* Soft color field — modern-art block, visible at rest,
-                    intensifies on hover. Position varies per card. */}
-                <div
-                  className={`${item.circle} rounded-full transition-all
-                    duration-500 pointer-events-none`}
-                  style={{ backgroundColor: item.accentSoft }}
-                />
-                <div
-                  className={`${item.circle} rounded-full opacity-0
-                    group-hover:opacity-100 transition-opacity
-                    duration-500 pointer-events-none`}
-                  style={{ backgroundColor: item.accentSoftHover }}
-                />
-
-                <div className="relative flex items-start justify-between">
-                  <span
-                    className="font-bebas text-[56px] leading-none
-                      transition-colors duration-300"
-                    style={{ color: item.accent }}
-                  >
-                    {item.num}
-                  </span>
-                  <span
-                    className="text-[10px] uppercase tracking-widest px-2.5
-                      py-1 mt-2 border transition-colors duration-300"
-                    style={{
-                      color: item.accent,
-                      borderColor: item.accent,
-                    }}
-                  >
-                    {item.detail}
-                  </span>
-                </div>
-                <div className="relative flex flex-col gap-2.5 flex-1">
-                  <h3 className="text-base font-medium text-neutral-900 leading-snug">
-                    {item.title}
-                  </h3>
-                  <p className="text-sm text-neutral-500 leading-relaxed">
-                    {item.body}
-                  </p>
-                </div>
-                <div
-                  className="relative h-[3px] transition-all duration-300"
-                  style={{ backgroundColor: item.accent }}
-                />
-              </motion.div>
-            ))}
-          </div>
-
-        </div>
-      </section>
+        ))}
+      </div>
+    </motion.div>
+  </div>
+</section>
 
       {/* ── Shops directory ── */}
       <section id="shops" className="py-16 md:py-24">
