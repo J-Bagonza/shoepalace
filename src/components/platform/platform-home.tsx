@@ -1095,6 +1095,7 @@ export function PlatformHomePage({ stores }: PlatformHomeProps) {
       { black: "VERI", red: "FIED", indent: 2 },
       { black: "DIR", red: "ECT", indent: 16 },
       { black: "INS", red: "TANT", indent: 30 },
+      { black: "DECI", red: "SIVE", indent: 30 },
     ].map((word) => (
       <div
         key={word.black + word.red}
